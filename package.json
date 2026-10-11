@@ -1,0 +1,17 @@
+{
+  "name": "friend-feud",
+  "version": "1.0.0",
+  "description": "A survey-showdown party game: scoreboard on the TV, buzzers and team chat on everyone's phone.",
+  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "ws": "^8.18.0"
+  }
+}

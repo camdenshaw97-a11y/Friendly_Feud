@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#4254f4">
+<title>Join the game</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231740b8'/%3E%3Cellipse cx='32' cy='32' rx='24' ry='16' fill='%23071452' stroke='%23f7c948' stroke-width='4'/%3E%3Cpath d='M24 24l16 16M40 24L24 40' stroke='%23e0211b' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: var(--text); background: var(--navy); color: #fff; touch-action: manipulation; overscroll-behavior: none; }
+  button { font-family: inherit; cursor: pointer; }
+  .view { display: none; min-height: 100%; }
+  .view.on { display: block; }
+  .disp { font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: .03em; }
+
+  /* ------------------------------------------------------------ join */
+  #join { background: #fff; color: #222; }
+  .jb-head { background: #4254f4; color: #fff; height: 68px; display: flex; align-items: center; justify-content: center; font: 400 30px var(--display); letter-spacing: .04em; }
+  #joinForm { max-width: 460px; margin: 0 auto; padding: 22px 22px 40px; }
+  #joinForm label { display: flex; justify-content: space-between; font-weight: 800; font-size: 20px; letter-spacing: .02em; margin: 14px 12px 8px; color: #2b2b2b; }
+  #joinForm input { width: 100%; border: 0; border-radius: 16px; background: #e0e0e0; padding: 15px 16px; font: 800 22px var(--text); color: #111; text-transform: uppercase; }
+  #joinForm input::placeholder { color: #9a9a9a; }
+  #joinForm input:focus { outline: 3px solid #4254f4; }
+  .jb-play { display: block; width: 92%; margin: 26px auto 0; border: 0; border-radius: 16px; padding: 17px; font: 800 24px var(--text); letter-spacing: .03em; background: #e0e0e0; color: #666; box-shadow: 0 7px 0 #4a4a4a; }
+  .jb-play.ready { background: #4254f4; color: #fff; box-shadow: 0 7px 0 #20299a; }
+  .jb-play:active { transform: translateY(4px); box-shadow: 0 3px 0 #20299a; }
+  #joinErr { color: #c41410; font-weight: 700; text-align: center; min-height: 22px; margin: 22px 0 0; }
+  .fine { text-align: center; font-weight: 700; font-size: 14px; color: #333; margin-top: 18px; line-height: 1.5; }
+  .fine a { color: #4254f4; }
+
+  /* --------------------------------------------------------- shared */
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; background: #030726; font-weight: 700; font-size: 14px; color: #b9c6f5; }
+  .bar b { color: #fff; font: 400 20px var(--display); letter-spacing: .12em; }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 14px 14px 40px; }
+  h2.t { font: 400 26px var(--display); letter-spacing: .04em; margin: 10px 0 12px; text-align: center; color: var(--gold); }
+  .card { background: #0d1a5c; border-radius: 16px; padding: 14px; margin-bottom: 12px; box-shadow: inset 0 0 0 2px #24358a; }
+  .card.mine { box-shadow: inset 0 0 0 3px var(--gold); }
+  .card h3 { font: 400 24px var(--display); letter-spacing: .04em; margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .card h3 small { font: 700 12px var(--text); color: #9fb0ee; letter-spacing: .06em; }
+  .who { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; min-height: 30px; }
+  .who span { background: #1b2b80; border-radius: 999px; padding: 5px 11px; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+  .who span.me { background: var(--gold); color: #1c1400; }
+  .who span.off { opacity: .45; }
+  .who span i { font-style: normal; color: #86adff; font-size: 12px; }
+  .who span.me i { color: #6b4a00; }
+  .who em { color: #9fb0ee; font-style: normal; font-size: 14px; padding: 5px 0; }
+  .who button { border: 0; background: #00000040; color: #fff; border-radius: 999px; width: 22px; height: 22px; font-size: 12px; line-height: 1; padding: 0; }
+  .btn { display: block; width: 100%; border: 0; border-radius: 12px; padding: 14px; font: 800 17px var(--text); color: #fff; background: #2a45c9; box-shadow: 0 4px 0 #101f73; }
+  .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #101f73; }
+  .btn.gold { background: linear-gradient(#ffe27a, #f2b01e); color: #231700; box-shadow: 0 4px 0 #8a5200; }
+  .btn.red { background: linear-gradient(#f0463d, #c41410); box-shadow: 0 4px 0 #6d0906; }
+  .btn.ghost { background: transparent; box-shadow: inset 0 0 0 2px #3a4da8; color: #cfdcff; }
+  .btn.big { padding: 20px; font-size: 22px; }
+  .btn.sm { padding: 10px; font-size: 14px; }
+  .btn:disabled { opacity: .4; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .note { color: #b9c6f5; font-size: 14px; line-height: 1.45; text-align: center; margin: 10px 4px; }
+  .nameform { display: flex; gap: 8px; margin-bottom: 10px; }
+  .nameform input { flex: 1; min-width: 0; font: 700 16px var(--text); color: #fff; background: #060f45; border: 2px solid #3a4da8; border-radius: 10px; padding: 10px 12px; text-transform: uppercase; }
+  .nameform input:focus { outline: none; border-color: var(--gold); }
+  .nameform button { border: 0; border-radius: 10px; padding: 0 16px; font: 800 15px var(--text); background: var(--gold); color: #231700; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 2px; font-weight: 700; font-size: 15px; }
+  .toggle small { display: block; font-weight: 400; color: #9fb0ee; font-size: 13px; margin-top: 2px; }
+  .sw { flex: none; width: 54px; height: 32px; border-radius: 999px; background: #2b3a80; border: 0; position: relative; }
+  .sw::after { content: ""; position: absolute; left: 4px; top: 4px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .sw.on { background: #31c48d; }
+  .sw.on::after { transform: translateX(22px); }
+  a.link { display: block; text-align: center; color: #9fb0ee; font-size: 14px; font-weight: 700; margin-top: 16px; text-decoration: underline; }
+
+  /* ------------------------------------------------------- scoreline */
+  .top { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; padding: 8px 10px; background: #030726; align-items: stretch; }
+  .top .tm { background: #0d1a5c; border-radius: 10px; padding: 5px 8px 4px; text-align: center; min-width: 0; box-shadow: inset 0 0 0 2px #24358a; }
+  .top .tm.act { box-shadow: inset 0 0 0 2px var(--gold); }
+  .top .tm.my .n::after { content: " ★"; color: var(--gold); }
+  .top .tm .n { font-size: 11px; font-weight: 800; letter-spacing: .05em; color: #b9c6f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top .tm .s { font: 400 28px/1.05 var(--display); display: block; }
+  .top .bk { background: linear-gradient(#0b1c6b, #050d3d); border-radius: 10px; padding: 5px 16px 4px; text-align: center; box-shadow: inset 0 0 0 2px var(--gold); }
+  .top .bk small { font-size: 10px; font-weight: 800; letter-spacing: .06em; color: var(--gold); display: block; white-space: nowrap; }
+  .top .bk b { font: 400 28px/1.05 var(--display); display: block; }
+
+  /* ------------------------------------------------------------ play */
+  #play.on { display: flex; flex-direction: column; height: var(--vh, 100dvh); min-height: 0; overflow: hidden; }
+  #pStatus { padding: 8px 12px; text-align: center; font-weight: 800; font-size: 15px; line-height: 1.3; background: #0d1a5c; }
+  #pStatus.you { background: var(--gold); color: #231700; }
+  #pMid { flex: none; padding: 10px 10px 6px; }
+  #pBoard { height: 204px; font-size: 19px; --gap: 5px; --r: 6px; --bw: 1.5px; }
+  .pinfo { display: flex; align-items: center; gap: 10px; margin-top: 8px; min-height: 26px; }
+  #pQ { flex: 1; font-weight: 700; font-size: 14px; line-height: 1.3; color: #dfe7ff; }
+  .xs { display: flex; gap: 4px; }
+  .xs i { width: 24px; height: 24px; border-radius: 5px; border: 2px solid #ffffff2e; position: relative; }
+  .xs i.hit { border-color: var(--red); background: #3a0503; }
+  .xs i.hit::before, .xs i.hit::after { content: ""; position: absolute; left: 50%; top: 50%; width: 16px; height: 4px; margin: -2px 0 0 -8px; background: var(--red); transform: rotate(45deg); }
+  .xs i.hit::after { transform: rotate(-45deg); }
+  #pBuzz { display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 12px 0 6px; }
+  #play.buzzing #pBuzz { display: flex; }
+  #play.buzzing #pBoardWrap { display: none; }
+  #play.typing #pMid { display: none; }
+  #buzzBtn {
+    width: 210px; height: 210px; border-radius: 50%; border: 0; color: #fff; font: 400 46px var(--display); letter-spacing: .06em;
+    background: radial-gradient(circle at 50% 32%, #ff6a60, #e0211b 55%, #9c0d08);
+    box-shadow: 0 12px 0 #5c0603, 0 0 0 8px #2a0301, 0 22px 40px #000a, inset 0 -10px 24px #0005, inset 0 10px 20px #ffffff44;
+    user-select: none; -webkit-user-select: none; touch-action: none;
+  }
+  #buzzBtn.live { animation: pulse 1s ease-in-out infinite; }
+  #buzzBtn:active, #buzzBtn.down { transform: translateY(8px); box-shadow: 0 4px 0 #5c0603, 0 0 0 8px #2a0301, inset 0 -10px 24px #0005; animation: none; }
+  #buzzBtn.wait { filter: grayscale(.75) brightness(.7); font-size: 30px; }
+  @keyframes pulse { 50% { box-shadow: 0 12px 0 #5c0603, 0 0 0 8px #2a0301, 0 0 0 20px #e0211b44, 0 22px 40px #000a, inset 0 -10px 24px #0005, inset 0 10px 20px #ffffff44; } }
+  #buzzNote { font-weight: 700; font-size: 14px; color: #dfe7ff; text-align: center; margin: 0; padding: 0 16px; line-height: 1.35; }
+  .chat { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #030726; border-top: 2px solid #24358a; }
+  .chat-head { padding: 6px 12px; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--gold); }
+  #chatLog { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 2px 10px 6px; display: flex; flex-direction: column; gap: 4px; }
+  #chatLog .m { max-width: 86%; background: #0d1a5c; border-radius: 12px 12px 12px 3px; padding: 6px 10px; font-size: 15px; line-height: 1.3; align-self: flex-start; overflow-wrap: anywhere; }
+  #chatLog .m b { display: block; font-size: 11px; letter-spacing: .05em; color: #86adff; }
+  #chatLog .m.me { align-self: flex-end; background: #2a45c9; border-radius: 12px 12px 3px 12px; }
+  #chatLog .m.me b { display: none; }
+  #chatLog .hint { color: #7f90d6; font-size: 13px; text-align: center; margin: auto 10px; line-height: 1.4; }
+  #chatForm { display: flex; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); background: #030726; }
+  #chatForm input { flex: 1; min-width: 0; font: 16px var(--text); color: #fff; background: #0d1a5c; border: 2px solid #24358a; border-radius: 999px; padding: 10px 16px; }
+  #chatForm input:focus { outline: none; border-color: var(--gold); }
+  #chatForm button { border: 0; border-radius: 999px; padding: 0 18px; font: 800 15px var(--text); background: var(--gold); color: #231700; }
+  /* fast money on phones */
+  #pFm { display: none; }
+  #play.fm #pFm { display: block; }
+  #play.fm #pBoardWrap, #play.fm #pBuzz { display: none; }
+  .fmt { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 8px; font: 400 15px var(--display); }
+  .fmt .ph { text-align: center; color: var(--gold); font-size: 14px; white-space: nowrap; overflow: hidden; }
+  .fmt .c { display: flex; height: 28px; border-radius: 6px; overflow: hidden; background: #0d2270; }
+  .fmt .c.shown { background: linear-gradient(#3472ea, #153aa8); }
+  .fmt .c.cover { background: repeating-linear-gradient(135deg, #0a1a5a 0 8px, #0d2270 8px 16px); }
+  .fmt .c span { flex: 1; min-width: 0; padding: 0 7px; white-space: nowrap; overflow: hidden; display: flex; align-items: center; text-transform: uppercase; }
+  .fmt .c b { width: 34px; font-weight: 400; display: flex; align-items: center; justify-content: center; background: #05103f; }
+  .fmsum { text-align: center; margin-top: 8px; font: 400 18px var(--display); letter-spacing: .04em; }
+  .fmsum b { color: var(--gold); font-weight: 400; font-size: 26px; }
+  .blind { text-align: center; padding: 26px 16px; font-weight: 800; font-size: 18px; line-height: 1.4; }
+
+  /* ------------------------------------------------------------ host */
+  #host .wrap { padding-top: 10px; }
+  .hq { background: #fff; color: #111; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+  .hq small { display: block; font-weight: 800; font-size: 11px; letter-spacing: .08em; color: #4254f4; margin-bottom: 4px; }
+  .hq b { font-size: 19px; line-height: 1.3; }
+  .prompt { background: #0d1a5c; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; box-shadow: inset 0 0 0 2px var(--gold); }
+  .prompt p { margin: 0 0 10px; font-size: 15px; line-height: 1.4; }
+  .prompt p:last-child { margin-bottom: 0; }
+  .prompt p b { color: var(--gold); }
+  .prompt .row { margin-top: 10px; }
+  .ans { display: grid; gap: 7px; margin-bottom: 10px; }
+  .ans button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 0; border-radius: 12px; padding: 0 0 0 12px; min-height: 50px; font: 800 16px var(--text); color: #fff; background: linear-gradient(#3472ea, #153aa8); box-shadow: 0 3px 0 #0a1f70; }
+  .ans button i { font: 400 15px var(--display); font-style: normal; color: #b9d2ff; width: 16px; }
+  .ans button span { flex: 1; min-width: 0; line-height: 1.2; padding: 6px 0; }
+  .ans button b { align-self: stretch; display: flex; align-items: center; justify-content: center; width: 56px; background: #00000040; border-radius: 0 12px 12px 0; font: 400 20px var(--display); }
+  .ans button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #0a1f70; }
+  .ans button.open { background: #14204f; color: #7f90d6; box-shadow: none; }
+  .ans button.open span::after { content: "  ✓ on the board"; font-size: 12px; font-weight: 700; }
+  .ans button:disabled:not(.open) { opacity: .5; }
+  .hfoot { display: flex; gap: 10px; margin-top: 4px; }
+  .hfoot .btn { flex: 1; }
+  .strk { display: inline-flex; gap: 4px; vertical-align: middle; margin-left: 6px; }
+  .menu-back { position: fixed; inset: 0; background: #020617e6; z-index: 500; overflow: auto; }
+  .menu { max-width: 520px; margin: 0 auto; padding: 16px 14px 40px; }
+  .adj { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
+  .adj span { flex: 1; font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .adj b { font: 400 24px var(--display); width: 56px; text-align: center; }
+  .adj button { border: 0; border-radius: 8px; width: 44px; height: 40px; font: 800 14px var(--text); background: #2a45c9; color: #fff; }
+  .clock { font: 400 64px/1 var(--display); text-align: center; color: var(--gold); margin: 2px 0 8px; }
+  .clock.hot { color: #ff6a60; }
+  .fmlist { display: grid; gap: 6px; margin-bottom: 10px; }
+  .fmlist div { background: #0d1a5c; border-radius: 10px; padding: 8px 12px; font-size: 14px; line-height: 1.35; }
+  .fmlist div.done { opacity: .5; }
+  .fmlist div b { color: var(--gold); }
+  select { width: 100%; font: 700 16px var(--text); color: #fff; background: #060f45; border: 2px solid #3a4da8; border-radius: 10px; padding: 11px 12px; margin: 4px 0 10px; }
+
+  /* -------------------------------------------------------- overlays */
+  #flash { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; gap: 12px; background: #000000b0; z-index: 800; pointer-events: none; }
+  #flash.on { display: flex; }
+  #flash i { width: 27vw; max-width: 130px; aspect-ratio: 1; border: 8px solid var(--red); border-radius: 12px; position: relative; background: #2a0301; }
+  #flash i::before, #flash i::after { content: ""; position: absolute; left: 12%; right: 12%; top: 50%; height: 16%; margin-top: -8%; background: var(--red); border-radius: 3px; transform: rotate(45deg); }
+  #flash i::after { transform: rotate(-45deg); }
+  #toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: #fff; color: #111; font-weight: 800; font-size: 15px; padding: 10px 18px; border-radius: 999px; z-index: 900; display: none; max-width: 90vw; text-align: center; box-shadow: 0 8px 30px #000a; }
+  #toast.on { display: block; }
+  #offline { position: fixed; left: 0; right: 0; top: 0; background: #7a1512; color: #fff; font-weight: 800; font-size: 13px; text-align: center; padding: 6px; z-index: 950; display: none; }
+  #offline.on { display: block; }
+</style>
+</head>
+<body>
+
+<section class="view on" id="join">
+  <div class="jb-head" data-title></div>
+  <form id="joinForm" autocomplete="off">
+    <label for="code">ROOM CODE</label>
+    <input id="code" maxlength="4" placeholder="ENTER 4-LETTER CODE" autocapitalize="characters" autocorrect="off" spellcheck="false">
+    <label for="name"><span>NAME</span><span id="nameLeft">12</span></label>
+    <input id="name" maxlength="12" placeholder="ENTER YOUR NAME" autocapitalize="characters" autocorrect="off" spellcheck="false">
+    <button class="jb-play" id="playBtn">PLAY</button>
+    <p id="joinErr"></p>
+    <p class="fine">The room code is on the TV.<br>Setting up the TV? <a href="/tv">Open the scoreboard</a> on the computer connected to it.</p>
+  </form>
+</section>
+
+<section class="view" id="lobby"></section>
+
+<section class="view" id="play">
+  <div class="top" id="pTop"></div>
+  <div id="pStatus"></div>
+  <div id="pMid">
+    <div id="pBoardWrap">
+      <div id="pBoard"></div>
+      <div class="pinfo"><div id="pQ"></div><div class="xs" id="pX"></div></div>
+    </div>
+    <div id="pBuzz">
+      <button id="buzzBtn" type="button">BUZZ</button>
+      <p id="buzzNote"></p>
+    </div>
+    <div id="pFm"></div>
+  </div>
+  <div class="chat">
+    <div class="chat-head" id="chatHead"></div>
+    <div id="chatLog"></div>
+    <form id="chatForm" autocomplete="off">
+      <input id="chatIn" maxlength="200" placeholder="Message your team…" enterkeyhint="send">
+      <button>Send</button>
+    </form>
+  </div>
+</section>
+
+<section class="view" id="host"></section>
+
+<div id="flash"></div>
+<div id="toast"></div>
+<div id="offline">Reconnecting…</div>
+
+<script src="/common.js"></script>
+<script src="/editor.js"></script>
+<script>
+(function () {
+  'use strict';
+  var F = window.Feud, $ = F.$, esc = F.esc;
+  var sess = F.store.get('feud.me', null);      // { code, token, name }
+  var S = null, me = null, conn = null, hello = null, lastSeq = null;
+  var triedRejoinByName = false, typed = false;
+  var pBoard = F.Board($('#pBoard'));
+  var menuOpen = false, editorOpen = false;
+
+  document.querySelectorAll('[data-title]').forEach(function (n) { n.textContent = F.TITLE; });
+  document.title = F.TITLE;
+
+  function show(id) {
+    document.querySelectorAll('.view').forEach(function (n) { n.classList.toggle('on', n.id === id); });
+    document.querySelector('meta[name=theme-color]').setAttribute('content', id === 'join' ? '#4254f4' : '#030726');
+  }
+  var toastTimer;
+  function toast(msg) {
+    var t = $('#toast'); t.textContent = msg; t.classList.add('on');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('on'); }, 2600);
+  }
+  function buzzPhone(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* ignore */ } }
+  function send(m) { if (!conn || !conn.send(m)) toast('Reconnecting… try again in a second'); }
+  function H(a, extra) { send(Object.assign({ t: 'h', a: a }, extra || {})); }
+
+  /* keep the layout glued to the visible area when the keyboard opens */
+  function fitViewport() {
+    var vv = window.visualViewport;
+    document.documentElement.style.setProperty('--vh', (vv ? vv.height : innerHeight) + 'px');
+    if ($('#play').classList.contains('on')) window.scrollTo(0, 0);
+  }
+  if (window.visualViewport) { visualViewport.addEventListener('resize', fitViewport); visualViewport.addEventListener('scroll', fitViewport); }
+  addEventListener('resize', fitViewport); fitViewport();
+
+  /* ------------------------------------------------------------- join */
+  var codeIn = $('#code'), nameIn = $('#name');
+  var qCode = (new URLSearchParams(location.search).get('code') || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+  codeIn.value = qCode || '';
+  nameIn.value = F.store.get('feud.name', '');
+  function joinReady() {
+    codeIn.value = codeIn.value.toUpperCase().replace(/[^A-Z]/g, '');
+    $('#nameLeft').textContent = 12 - nameIn.value.length;
+    var ok = codeIn.value.length === 4 && nameIn.value.trim().length > 0;
+    $('#playBtn').classList.toggle('ready', ok);
+    return ok;
+  }
+  codeIn.addEventListener('input', joinReady); nameIn.addEventListener('input', joinReady); joinReady();
+  $('#joinForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!joinReady()) { $('#joinErr').textContent = 'Enter the 4-letter room code and your name.'; return; }
+    $('#joinErr').textContent = '';
+    typed = true;
+    F.store.set('feud.name', nameIn.value.trim().toUpperCase());
+    start({ t: 'join', code: codeIn.value, name: nameIn.value.trim() });
+  });
+
+  function start(h) {
+    hello = h; lastSeq = null;
+    if (!conn) {
+      conn = F.connect({
+        hello: function () { return hello; },
+        onMessage: onMessage,
+        onStatus: function (ok) { $('#offline').classList.toggle('on', !ok && !!S); }
+      });
+    } else if (!conn.send(h)) $('#joinErr').textContent = 'Connecting…';
+  }
+
+  function backToJoin(msg) {
+    S = null; me = null; hello = null; sess = null;
+    F.store.del('feud.me');
+    closeMenu();
+    show('join');
+    $('#joinErr').textContent = msg || '';
+  }
+
+  function onMessage(m) {
+    if (m.t === 'joined') {
+      sess = { code: m.code, token: m.token, name: (sess && sess.name) || nameIn.value.trim().toUpperCase() };
+      F.store.set('feud.me', sess);
+      hello = { t: 'rejoin', code: m.code, token: m.token };
+      triedRejoinByName = false;
+      F.stayAwake();
+    } else if (m.t === 'error') {
+      if (m.code === 'noroom' && hello && hello.t === 'rejoin' && sess && sess.name && !triedRejoinByName) {
+        triedRejoinByName = true;                  // our seat was cleared: try walking back in by name
+        hello = { t: 'join', code: sess.code, name: sess.name };
+        conn.send(hello);
+      } else if (!S || m.code === 'noroom') {
+        // a stale saved game from another night shouldn't greet people with an error
+        backToJoin(typed || S ? m.msg : '');
+      } else toast(m.msg);
+    } else if (m.t === 'left') {
+      if (conn && m.replaced) { conn.stop(); conn = null; }
+      backToJoin(m.kicked ? 'The host removed you from the game.' : m.replaced ? 'This game was opened on another device or tab.' : '');
+    } else if (m.t === 'state') {
+      var list = m.s.fx || [], fresh = [];
+      if (lastSeq === null) lastSeq = list.length ? list[list.length - 1].seq : 0;
+      else { fresh = list.filter(function (e) { return e.seq > lastSeq; }); if (fresh.length) lastSeq = fresh[fresh.length - 1].seq; }
+      S = m.s; me = S.me;
+      render(fresh);
+    }
+  }
+
+  if (sess && sess.code && sess.token && (!qCode || qCode === sess.code)) {
+    start({ t: 'rejoin', code: sess.code, token: sess.token });
+  }
+
+  /* ----------------------------------------------------------- render */
+  function T(i) { return S.teams[i].name; }
+  function render(fresh) {
+    var has = {};
+    fresh.forEach(function (e) { has[e.type] = e; });
+    if (has.strike && !me.isHost) flash(has.strike.n);
+    if (has.fmDup && me.isHost) { toast('Already said by player one. Ask for another answer!'); buzzPhone(200); }
+
+    if (me.isHost && S.phase !== 'lobby') { show('host'); renderHost(); }
+    else if (S.phase === 'lobby' || me.team == null) { show('lobby'); renderLobby(); }
+    else { show('play'); renderPlay(has); }
+    if (menuOpen) renderMenu();
+  }
+
+  var flashTimer;
+  function flash(n) {
+    var f = $('#flash');
+    f.innerHTML = new Array(n + 1).join('<i></i>');
+    f.classList.add('on'); buzzPhone([120, 60, 120]);
+    clearTimeout(flashTimer); flashTimer = setTimeout(function () { f.classList.remove('on'); }, 1300);
+  }
+
+  function topBar(act) {
+    var g = S.game;
+    var isFm = S.phase === 'fm' && g.fm;
+    var label = isFm ? 'FAST MONEY' : g.sudden ? 'SUDDEN DEATH ×3' : 'ROUND ' + g.round + (g.mult > 1 ? ' ×' + g.mult : '');
+    function tm(t) {
+      return '<div class="tm' + (act === t ? ' act' : '') + (me.team === t ? ' my' : '') + '"><div class="n">' + esc(T(t)) + '</div><b class="s">' + g.scores[t] + '</b></div>';
+    }
+    return tm(0) + '<div class="bk"><small>' + label + '</small><b>' + (isFm ? g.fm.total : g.bank) + '</b></div>' + tm(1);
+  }
+  function activeTeam() {
+    var g = S.game;
+    return S.phase === 'play' ? g.playing : S.phase === 'steal' ? g.stealTeam : S.phase === 'faceoff' ? g.fo.turn
+      : S.phase === 'passplay' ? g.fo.winner : S.phase === 'roundEnd' ? g.roundWinner : S.phase === 'gameOver' ? g.winner : null;
+  }
+  function xs(n) { return [0, 1, 2].map(function (k) { return '<i class="' + (k < n ? 'hit' : '') + '"></i>'; }).join(''); }
+
+  /* ------------------------------------------------------------ lobby */
+  var lobbyDirty = false;
+  function renderLobby() {
+    var root = $('#lobby');
+    var ae = document.activeElement;
+    if (ae && root.contains(ae) && ae.tagName === 'INPUT') { lobbyDirty = true; return; }   // don't yank the keyboard away
+    lobbyDirty = false;
+    var inGame = S.phase !== 'lobby';
+    var h = '<div class="bar"><span>ROOM <b>' + esc(S.code) + '</b></span><span>' + esc(me.name) + (me.isHost ? ' · HOST' : '') + '</span></div><div class="wrap">';
+    h += '<h2 class="t">' + (me.isHost ? 'You’re the host' : inGame ? 'Game in progress: pick a team' : me.team == null ? 'Pick your team' : 'You’re in!') + '</h2>';
+
+    [0, 1].forEach(function (t) {
+      var team = S.teams[t], mine = me.team === t;
+      h += '<div class="card' + (mine ? ' mine' : '') + '"><h3><span>' + esc(team.name) + '</span><small>' + team.players.length + ' PLAYER' + (team.players.length === 1 ? '' : 'S') + '</small></h3>';
+      if (mine && me.captain) {
+        h += '<form class="nameform" data-teamname><input maxlength="18" placeholder="Name your team" value="' + (team.named ? esc(team.name) : '') + '"><button>Save</button></form>';
+      }
+      h += '<div class="who">';
+      if (!team.players.length) h += '<em>Nobody yet. First one in names the team.</em>';
+      team.players.forEach(function (p, i) {
+        h += '<span class="' + (p.id === me.id ? 'me' : '') + (p.on ? '' : ' off') + '"><i>' + (i + 1) + '</i>' + esc(p.name) +
+          (me.isHost ? '<button data-a="move" data-id="' + p.id + '" data-team="' + (1 - t) + '" title="Move to other team">⇄</button><button data-a="kick" data-id="' + p.id + '" title="Remove">✕</button>' : '') + '</span>';
+      });
+      h += '</div>';
+      if (!me.isHost && !mine && !(inGame && me.team != null)) h += '<button class="btn" data-a="team" data-team="' + t + '">Join ' + esc(team.name) + '</button>';
+      h += '</div>';
+    });
+
+    if (S.loose.length && me.isHost) {
+      h += '<div class="card"><h3><span>No team yet</span></h3><div class="who">' + S.loose.map(function (p) {
+        return '<span>' + esc(p.name) + '<button data-a="move" data-id="' + p.id + '" data-team="0">1</button><button data-a="move" data-id="' + p.id + '" data-team="1">2</button><button data-a="kick" data-id="' + p.id + '">✕</button></span>';
+      }).join('') + '</div></div>';
+    }
+
+    if (me.isHost) {
+      var st = S.settings, n = S.customCount, saved = F.savedQuestions().length;
+      h += '<div class="card"><h3><span>Game settings</span></h3>' +
+        '<div class="toggle"><div>Fast Money finale<small>The winning team plays for 200 points after round 3.</small></div><button class="sw' + (st.fastMoney ? ' on' : '') + '" data-a="set" data-k="fastMoney"></button></div>' +
+        '<div class="toggle"><div>Use my own questions first<small>' + (n ? n + ' loaded. Built-in questions fill the rest.' : 'None loaded yet. Built-in questions will be used.') + '</small></div><button class="sw' + (st.useCustom && n ? ' on' : '') + '" data-a="set" data-k="useCustom"' + (n ? '' : ' disabled') + '></button></div>' +
+        '<div class="row" style="margin-top:8px"><button class="btn ghost sm" data-a="editor">Write questions</button>' +
+        (saved && !n ? '<button class="btn ghost sm" data-a="loadSaved">Load my ' + saved + ' saved</button>' : '') + '</div></div>';
+      var ok = S.teams[0].players.length && S.teams[1].players.length;
+      h += '<button class="btn gold big" data-a="start"' + (ok ? '' : ' disabled') + '>START THE GAME</button>';
+      h += '<p class="note">' + (ok ? 'Keep this phone to yourself: it shows every answer.' : 'You need at least one player on each team.') + '</p>';
+      h += '<a class="link" data-a="unhost">Stop being the host</a>';
+    } else {
+      var hostGone = !S.host || !S.host.on;
+      h += '<div class="card"><h3><span>Host</span><small>RUNS THE GAME</small></h3>';
+      if (S.host) h += '<div class="who"><span class="' + (S.host.on ? '' : 'off') + '">' + esc(S.host.name) + '</span></div>';
+      if (hostGone && (!inGame || me.team == null)) h += '<button class="btn ghost" data-a="behost">' + (S.host ? 'Take over as host' : 'Be the host') + '</button>';
+      else if (!S.host) h += '<div class="who"><em>No host yet.</em></div>';
+      h += '</div>';
+      if (!inGame) h += '<p class="note">' + (me.team == null ? 'The host reads the questions and runs the board, so they don’t play on a team.' : 'Waiting for the host to start. Watch the TV!') + '</p>';
+    }
+    h += '<a class="link" data-a="leave">Leave the game</a></div>';
+    root.innerHTML = h;
+  }
+
+  $('#lobby').addEventListener('focusout', function () { setTimeout(function () { if (lobbyDirty && S) renderLobby(); }, 50); });
+  $('#lobby').addEventListener('submit', function (e) {
+    var f = e.target.closest('[data-teamname]');
+    if (!f) return;
+    e.preventDefault();
+    var input = f.querySelector('input');
+    send({ t: 'teamName', name: input.value });
+    input.blur();
+    toast('Team name saved');
+  });
+  $('#lobby').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-a]');
+    if (!b) return;
+    var a = b.dataset.a;
+    if (a === 'team') send({ t: 'team', team: Number(b.dataset.team) });
+    else if (a === 'behost') send({ t: 'host', on: true });
+    else if (a === 'unhost') send({ t: 'host', on: false });
+    else if (a === 'leave') { if (confirm('Leave this game?')) send({ t: 'leave' }); }
+    else if (a === 'kick') { if (confirm('Remove this player?')) H('kick', { id: b.dataset.id }); }
+    else if (a === 'move') H('move', { id: b.dataset.id, team: Number(b.dataset.team) });
+    else if (a === 'set') { var o = {}; o[b.dataset.k] = !b.classList.contains('on'); H('settings', o); }
+    else if (a === 'start') H('start');
+    else if (a === 'loadSaved') H('custom', { list: F.savedQuestions() });
+    else if (a === 'editor') openEditor();
+  });
+  function openEditor() {
+    editorOpen = true;
+    F.openEditor({
+      list: (S.hostView && S.hostView.custom && S.hostView.custom.length) ? S.hostView.custom : F.savedQuestions(),
+      onChange: function (list) { H('custom', { list: list }); },
+      onClose: function () { editorOpen = false; }
+    });
+  }
+
+  /* ------------------------------------------------------------- play */
+  var chatTeam = null, chatLast = 0;
+  function renderPlay(has) {
+    var g = S.game, root = $('#play');
+    var isFm = S.phase === 'fm';
+    $('#pTop').innerHTML = topBar(isFm ? g.fm.team : activeTeam());
+
+    // status line
+    var st = '', you = false;
+    var myTurn = g.answerer && g.answerer.id === me.id;
+    var names = g.fo.pids.map(function (id, t) { var p = S.teams[t].players.filter(function (x) { return x.id === id; })[0]; return p ? p.name : T(t); });
+    if (S.phase === 'question') { st = me.faceoff ? 'You’re up for the face-off!' : 'Face-off: ' + names[0] + ' vs ' + names[1]; you = !!me.faceoff; }
+    else if (S.phase === 'faceoff') {
+      if (g.fo.buzzed == null) { st = me.faceoff ? 'Buzz when you know it!' : 'Buzzers are live…'; you = !!me.faceoff; }
+      else if (myTurn) { st = 'YOUR ANSWER! Say it out loud.'; you = true; }
+      else st = (g.answerer ? g.answerer.name : T(g.fo.turn)) + ' is answering for ' + T(g.fo.turn);
+    }
+    else if (S.phase === 'passplay') st = T(g.fo.winner) + ' won the face-off. ' + (g.fo.winner === me.team ? 'Pass or play? Tell the host.' : 'They’re deciding: pass or play.');
+    else if (S.phase === 'play') {
+      if (myTurn) { st = 'YOUR TURN! Say your answer out loud.'; you = true; }
+      else st = 'Playing: ' + T(g.playing) + (g.answerer ? ' · ' + g.answerer.name + ' is up' : '');
+    }
+    else if (S.phase === 'steal') {
+      if (g.stealTeam === me.team) { st = 'STEAL! Agree on ONE answer in chat, then say it.'; you = true; }
+      else st = 'Steal chance for ' + T(g.stealTeam) + '…';
+    }
+    else if (S.phase === 'roundEnd') st = (g.stolen ? 'Stolen! ' : '') + g.awarded + ' points to ' + T(g.roundWinner);
+    else if (S.phase === 'gameOver') { st = (g.winner === me.team ? 'YOU WON! ' : 'Game over. Winners: ') + T(g.winner); you = g.winner === me.team; }
+    else if (isFm) st = 'FAST MONEY · ' + T(g.fm.team);
+    var ps = $('#pStatus'); ps.textContent = st; ps.classList.toggle('you', you);
+
+    // middle: buzzer, board, or fast money
+    var buzzing = !isFm && !!me.faceoff;
+    root.classList.toggle('buzzing', buzzing);
+    root.classList.toggle('fm', isFm);
+    if (buzzing) {
+      var live = S.phase === 'faceoff' && g.fo.open;
+      var btn = $('#buzzBtn');
+      btn.classList.toggle('live', live); btn.classList.toggle('wait', !live);
+      btn.textContent = live ? 'BUZZ' : 'GET READY';
+      $('#buzzNote').textContent = live ? 'First one to buzz gets to answer.' : 'Your buzzer goes live the moment the host starts reading the question.';
+    } else if (!isFm) {
+      pBoard.update(g, !!has.reveal);
+      $('#pQ').textContent = g.question || '';
+      $('#pX').innerHTML = (S.phase === 'play' || S.phase === 'steal') ? xs(g.strikes) : '';
+    } else renderPlayFm(g.fm);
+    if (has.buzz && has.buzz.team === me.team) buzzPhone(80);
+
+    // team chat
+    if (chatTeam !== me.team) { chatTeam = me.team; chatLast = 0; $('#chatLog').innerHTML = ''; }
+    $('#chatHead').textContent = 'TEAM CHAT · ONLY ' + T(me.team) + ' CAN SEE THIS';
+    var log = $('#chatLog'), msgs = S.chat || [];
+    var near = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
+    var added = false;
+    msgs.forEach(function (c) {
+      if (c.id <= chatLast) return;
+      var d = document.createElement('div');
+      d.className = 'm' + (c.from === me.id ? ' me' : '');
+      d.innerHTML = '<b>' + esc(c.name) + '</b>' + esc(c.text);
+      log.appendChild(d); chatLast = c.id; added = true;
+    });
+    var hint = log.querySelector('.hint');
+    if (!msgs.length && !hint) log.innerHTML = '<div class="hint">Whisper here instead of out loud, so the other team can’t hear your answers.</div>';
+    else if (msgs.length && hint) hint.remove();
+    if (added && near) log.scrollTop = log.scrollHeight;
+  }
+
+  function renderPlayFm(fm) {
+    var el = $('#pFm');
+    if (fm.blind) { el.innerHTML = '<div class="blind">You’re up second in Fast Money.<br>Step out of the room. No peeking, no listening!</div>'; return; }
+    var p = fm.players;
+    var h = '<div class="fmt"><div class="ph">' + esc(p[0] ? p[0].name : '') + '</div><div class="ph">' + esc(p[1] ? p[1].name : '') + '</div>';
+    for (var k = 0; k < 5; k++) for (var t = 0; t < 2; t++) {
+      var r = fm.rows[t][k];
+      if (t === 0 && fm.cover) h += '<div class="c cover"></div>';
+      else if (r && r.locked) h += '<div class="c"><span>• • •</span><b></b></div>';
+      else if (r) h += '<div class="c shown"><span>' + esc(r.text) + '</span><b>' + r.pts + '</b></div>';
+      else h += '<div class="c"><span></span><b></b></div>';
+    }
+    h += '</div><div class="fmsum">TOTAL <b>' + fm.total + '</b> / ' + fm.target + (fm.stage === 'done' ? (fm.won ? ' · WINNERS!' : ' · so close') : '') + '</div>';
+    el.innerHTML = h;
+  }
+
+  var buzzBtn = $('#buzzBtn');
+  function doBuzz(e) {
+    e.preventDefault();
+    if (!S || !S.game || S.phase !== 'faceoff' || !S.game.fo.open) return;
+    buzzBtn.classList.add('down'); setTimeout(function () { buzzBtn.classList.remove('down'); }, 150);
+    buzzPhone(60);
+    if (conn) conn.send({ t: 'buzz' });
+  }
+  buzzBtn.addEventListener('pointerdown', doBuzz);
+  buzzBtn.addEventListener('click', function (e) { e.preventDefault(); });
+
+  $('#chatForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = $('#chatIn'), text = input.value.trim();
+    if (!text) return;
+    if (conn && conn.send({ t: 'chat', text: text })) { input.value = ''; var log = $('#chatLog'); setTimeout(function () { log.scrollTop = log.scrollHeight; }, 60); }
+    else toast('Reconnecting… try again');
+  });
+  $('#chatIn').addEventListener('focus', function () { $('#play').classList.add('typing'); setTimeout(fitViewport, 300); });
+  $('#chatIn').addEventListener('blur', function () { $('#play').classList.remove('typing'); pBoard.refit(); setTimeout(fitViewport, 300); });
+
+  /* ------------------------------------------------------------- host */
+  var hostClock = null, hostEnd = null;
+  function renderHost() {
+    var g = S.game, hv = S.hostView || {}, root = $('#host');
+    var isFm = S.phase === 'fm';
+    var h = '<div class="top">' + topBar(isFm ? g.fm.team : activeTeam()) + '</div><div class="wrap">';
+    if (isFm) h += hostFm(g, hv);
+    else h += hostRound(g, hv);
+    h += '<div class="hfoot"><button class="btn ghost sm" data-a="undo"' + (hv.canUndo ? '' : ' disabled') + '>↶ Undo last tap</button><button class="btn ghost sm" data-a="menu">Menu</button></div></div>';
+    root.innerHTML = h;
+
+    // fast money clock on the host phone
+    var fm = g.fm;
+    if (isFm && fm.stage === 'run' && fm.left != null) {
+      hostEnd = performance.now() + fm.left;
+      if (!hostClock) hostClock = setInterval(tickHost, 100);
+      tickHost();
+    } else { hostEnd = null; if (hostClock) { clearInterval(hostClock); hostClock = null; } }
+  }
+  function tickHost() {
+    var el = $('#hClock');
+    if (!el || hostEnd == null) return;
+    var sec = Math.max(0, Math.ceil((hostEnd - performance.now()) / 1000));
+    el.textContent = sec; el.classList.toggle('hot', sec <= 5);
+  }
+
+  function hostRound(g, hv) {
+    var ph = S.phase, h = '';
+    var mult = g.mult === 2 ? ' · DOUBLE' : g.mult === 3 ? ' · TRIPLE' : '';
+    h += '<div class="hq"><small>' + (g.sudden ? 'SUDDEN DEATH' : 'ROUND ' + g.round) + mult + (ph === 'question' || ph === 'faceoff' ? ' · READ THIS OUT LOUD' : '') + '</small><b>' + esc(hv.question || '') + '</b></div>';
+    var names = g.fo.pids.map(function (id, t) { var p = S.teams[t].players.filter(function (x) { return x.id === id; })[0]; return p ? p.name : '?'; });
+    var who = g.answerer ? '<b>' + esc(g.answerer.name) + '</b>' : '';
+    var canTap = false, miss = null, p = '';
+
+    if (ph === 'question') {
+      p = '<p>Face-off: <b>' + esc(names[0]) + '</b> (' + esc(T(0)) + ') vs <b>' + esc(names[1]) + '</b> (' + esc(T(1)) + ').</p>' +
+        '<p>Tap the button as you start reading. That turns their buzzers on and shows the question on the TV.</p>' +
+        '<button class="btn gold big" data-a="open">OPEN THE BUZZERS</button>' +
+        '<div class="row"><button class="btn ghost sm" data-a="swap">Skip to a different question</button></div>';
+    } else if (ph === 'faceoff' && g.fo.buzzed == null) {
+      p = '<p><b>Buzzers are live.</b> Waiting for ' + esc(names[0]) + ' or ' + esc(names[1]) + ' to buzz…</p>' +
+        '<p style="color:#9fb0ee;font-size:13px">Phone trouble? Call it yourself:</p>' +
+        '<div class="row"><button class="btn sm" data-a="mbuzz" data-team="0">' + esc(T(0)) + ' buzzed</button><button class="btn sm" data-a="mbuzz" data-team="1">' + esc(T(1)) + ' buzzed</button></div>';
+    } else if (ph === 'faceoff') {
+      canTap = true; miss = 'NOT ON THE BOARD ✕';
+      var tries = g.fo.tries;
+      p = '<p>' + (tries === 0 ? who + ' (' + esc(T(g.fo.turn)) + ') buzzed first.' : tries === 1 ? 'Now ' + who + ' (' + esc(T(g.fo.turn)) + ') gets a chance to beat it.' : 'Still nothing on the board. ' + who + ' (' + esc(T(g.fo.turn)) + ') is next.') +
+        '</p><p>Tap their answer below if it’s there.</p>' +
+        (tries === 0 ? '<div class="row"><button class="btn ghost sm" data-a="clearBuzz">False start: reset buzzers</button></div>' : '');
+    } else if (ph === 'passplay') {
+      p = '<p><b>' + esc(T(g.fo.winner)) + '</b> won the face-off. Ask them: pass or play?</p>' +
+        '<div class="row"><button class="btn gold big" data-a="pp" data-play="1">PLAY</button><button class="btn big" data-a="pp" data-play="0">PASS</button></div>';
+    } else if (ph === 'play') {
+      canTap = true; miss = 'STRIKE ✕';
+      p = '<p>Playing: <b>' + esc(T(g.playing)) + '</b>. Ask ' + who + '.<span class="strk xs">' + xs(g.strikes) + '</span></p>';
+    } else if (ph === 'steal') {
+      canTap = true; miss = 'NOT ON THE BOARD ✕';
+      p = '<p>Three strikes! <b>' + esc(T(g.stealTeam)) + '</b> can steal ' + g.bank + ' points with ONE answer. Give them a moment to talk it over in chat.</p>';
+    } else if (ph === 'roundEnd') {
+      canTap = true;
+      var left = hv.answers ? hv.answers.filter(function (a) { return !a.open; }).length : 0;
+      var last = (g.round >= 3 || g.sudden);
+      p = '<p>' + (g.stolen ? 'Stolen! ' : '') + '<b>' + g.awarded + '</b> points to <b>' + esc(T(g.roundWinner)) + '</b>.</p>' +
+        (left ? '<p>Tap the answers nobody got to reveal them on the TV.</p>' : '') +
+        '<button class="btn gold big" data-a="next">' + (!last ? 'START ROUND ' + (g.round + 1) : g.scores[0] === g.scores[1] ? 'TIED! SUDDEN DEATH' : 'SHOW THE WINNER') + '</button>';
+    } else if (ph === 'gameOver') {
+      canTap = true;
+      p = '<p>Game over. Winners: <b>' + esc(T(g.winner)) + '</b>, ' + Math.max(g.scores[0], g.scores[1]) + ' to ' + Math.min(g.scores[0], g.scores[1]) + '.</p>';
+      if (S.settings.fastMoney) {
+        var team = S.teams[g.winner].players;
+        var opt = function (sel) { return team.map(function (x, i) { return '<option value="' + x.id + '"' + (i === sel ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join(''); };
+        p += '<p>Fast Money: pick two players from the winning team.</p><label style="font-size:13px;font-weight:700;color:#b9c6f5">GOES FIRST</label><select id="fm1">' + opt(0) + '</select>' +
+          '<label style="font-size:13px;font-weight:700;color:#b9c6f5">GOES SECOND (leaves the room first)</label><select id="fm2">' + opt(team.length > 1 ? 1 : 0) + '</select>' +
+          '<button class="btn gold big" data-a="fmStart">PLAY FAST MONEY</button>';
+      }
+      p += '<div class="row"><button class="btn ' + (S.settings.fastMoney ? 'ghost sm' : 'gold big') + '" data-a="again">New game, same teams</button></div>';
+    }
+    h += '<div class="prompt">' + p + '</div>';
+
+    h += '<div class="ans">';
+    (hv.answers || []).forEach(function (a, i) {
+      h += '<button data-a="reveal" data-i="' + i + '" class="' + (a.open ? 'open' : '') + '"' + (a.open || !canTap ? ' disabled' : '') + '><i>' + (i + 1) + '</i><span>' + esc(a.text) + '</span><b>' + a.pts + '</b></button>';
+    });
+    h += '</div>';
+    if (miss) h += '<button class="btn red big" data-a="miss" style="margin-bottom:12px">' + miss + '</button>';
+    return h;
+  }
+
+  function hostFm(g, hv) {
+    var fm = g.fm, d = hv.fm, h = '';
+    var p = fm.players, who = p[fm.turn] ? esc(p[fm.turn].name) : '';
+    if (fm.stage === 'ready') {
+      h += '<div class="prompt"><p><b>FAST MONEY</b> · ' + (fm.turn === 0 ? 'First up' : 'Second up') + ': <b>' + who + '</b></p>' +
+        '<p>' + (fm.turn === 0
+          ? 'Send ' + (p[1] && p[1].id !== p[0].id ? '<b>' + esc(p[1].name) + '</b>' : 'the second player') + ' out of the room. Then ' + who + ' gets 5 questions in ' + fm.seconds[0] + ' seconds. Tap what they say as they answer; they can pass and come back.'
+          : 'Bring ' + who + ' back in. ' + fm.seconds[1] + ' seconds this time, and they can’t repeat an answer. If they do, you’ll hear a double buzz.') + '</p>' +
+        '<button class="btn gold big" data-a="fmClock">START THE CLOCK</button></div>';
+      h += '<div class="fmlist">' + d.qs.map(function (q, k) { return '<div>' + (k + 1) + '. ' + esc(q.text) + '</div>'; }).join('') + '</div>';
+    } else if (fm.stage === 'run') {
+      var q = d.qs[fm.cur], prev = fm.turn === 1 && d.picks[0][fm.cur] ? d.picks[0][fm.cur].i : null;
+      h += '<div class="clock" id="hClock">' + Math.ceil(fm.left / 1000) + '</div>' +
+        '<div class="hq"><small>QUESTION ' + (fm.cur + 1) + ' OF 5 · ' + who + '</small><b>' + esc(q.text) + '</b></div><div class="ans">';
+      q.answers.forEach(function (a, i) {
+        h += '<button data-a="fmPick" data-i="' + i + '"><i></i><span>' + esc(a.text) + (prev === i ? ' (said already)' : '') + '</span><b>' + a.pts + '</b></button>';
+      });
+      h += '</div><div class="row" style="margin-bottom:12px"><button class="btn red" data-a="fmPick" data-i="-1">NOT ON THE LIST</button><button class="btn" data-a="fmPass">PASS</button></div>';
+    } else {
+      var shown = d.shown[fm.turn], all = shown >= 5;
+      h += '<div class="prompt"><p><b>FAST MONEY</b> · ' + (fm.stage === 'done' ? (fm.won ? '<b>THEY WON!</b> ' : 'Not this time. ') + fm.total + ' of ' + fm.target + ' points.' : who + '’s answers. Total so far: <b>' + fm.total + '</b>') + '</p>';
+      if (fm.stage === 'reveal' && !all) h += '<button class="btn gold big" data-a="fmReveal">REVEAL ANSWER ' + (shown + 1) + '</button>';
+      else if (fm.stage === 'reveal' && fm.turn === 0) h += '<button class="btn gold big" data-a="fmNextPlayer">ON TO ' + esc(p[1] ? p[1].name : 'PLAYER 2') + '</button>';
+      else if (fm.stage === 'done') h += '<button class="btn gold big" data-a="again">New game, same teams</button>';
+      h += '</div><div class="fmlist">';
+      d.qs.forEach(function (q, k) {
+        var pick = d.picks[fm.turn][k];
+        var txt = pick ? (pick.i >= 0 ? q.answers[pick.i].text + ' (' + q.answers[pick.i].pts + ')' : 'not on the list (0)') : 'no answer (0)';
+        h += '<div class="' + (k < shown ? 'done' : '') + '">' + (k + 1) + '. ' + esc(q.text) + '<br><b>' + esc(txt) + '</b></div>';
+      });
+      h += '</div>';
+    }
+    return h;
+  }
+
+  $('#host').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-a]');
+    if (!b || b.disabled) return;
+    var a = b.dataset.a;
+    if (a === 'open') H('open');
+    else if (a === 'swap') H('swap');
+    else if (a === 'mbuzz') H('manualBuzz', { team: Number(b.dataset.team) });
+    else if (a === 'clearBuzz') H('clearBuzz');
+    else if (a === 'reveal') H('reveal', { idx: Number(b.dataset.i) });
+    else if (a === 'miss') { H('miss'); buzzPhone(100); }
+    else if (a === 'pp') H('passplay', { play: b.dataset.play === '1' });
+    else if (a === 'next') H('next');
+    else if (a === 'undo') H('undo');
+    else if (a === 'menu') openMenu();
+    else if (a === 'fmStart') H('fmStart', { pids: [$('#fm1').value, $('#fm2').value] });
+    else if (a === 'fmClock') H('fmClock');
+    else if (a === 'fmPick') H('fmPick', { i: Number(b.dataset.i) });
+    else if (a === 'fmPass') H('fmPass');
+    else if (a === 'fmReveal') H('fmReveal');
+    else if (a === 'fmNextPlayer') H('fmNextPlayer');
+    else if (a === 'again') { if (confirm('Go back to the lobby for a new game? Scores reset, teams stay.')) H('endGame'); }
+  });
+
+  /* ------------------------------------------------------------- menu */
+  function openMenu() {
+    menuOpen = true;
+    var m = document.createElement('div');
+    m.className = 'menu-back'; m.id = 'menu';
+    document.body.appendChild(m);
+    m.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-a]');
+      if (!b) return;
+      var a = b.dataset.a;
+      if (a === 'close') closeMenu();
+      else if (a === 'adj') H('adjust', { team: Number(b.dataset.team), delta: Number(b.dataset.d) });
+      else if (a === 'move') H('move', { id: b.dataset.id, team: Number(b.dataset.team) });
+      else if (a === 'kick') { if (confirm('Remove this player?')) H('kick', { id: b.dataset.id }); }
+      else if (a === 'end') { if (confirm('End this game and go back to the lobby? Scores reset, teams stay.')) { H('endGame'); closeMenu(); } }
+    });
+    renderMenu();
+  }
+  function closeMenu() { menuOpen = false; var m = $('#menu'); if (m) m.remove(); }
+  function renderMenu() {
+    var m = $('#menu');
+    if (!m || !S || !S.game || !me.isHost) { closeMenu(); return; }
+    var g = S.game;
+    var h = '<div class="menu"><div class="row" style="align-items:center;margin-bottom:10px"><h2 class="t" style="text-align:left;margin:0">Host menu</h2><button class="btn sm" data-a="close" style="flex:none;width:90px">Close</button></div>';
+    h += '<div class="card"><h3><span>Fix a score</span></h3>';
+    [0, 1].forEach(function (t) {
+      h += '<div class="adj"><span>' + esc(T(t)) + '</span>' +
+        [-10, -1].map(function (d) { return '<button data-a="adj" data-team="' + t + '" data-d="' + d + '">' + d + '</button>'; }).join('') +
+        '<b>' + g.scores[t] + '</b>' +
+        [1, 10].map(function (d) { return '<button data-a="adj" data-team="' + t + '" data-d="' + d + '">+' + d + '</button>'; }).join('') + '</div>';
+    });
+    h += '</div><div class="card"><h3><span>Players</span><small>ANSWERING ORDER</small></h3>';
+    [0, 1].forEach(function (t) {
+      h += '<p style="margin:8px 0 6px;font-weight:800;color:#f7c948">' + esc(T(t)) + '</p><div class="who">' + S.teams[t].players.map(function (p, i) {
+        return '<span class="' + (p.on ? '' : 'off') + '"><i>' + (i + 1) + '</i>' + esc(p.name) + '<button data-a="move" data-id="' + p.id + '" data-team="' + (1 - t) + '">⇄</button><button data-a="kick" data-id="' + p.id + '">✕</button></span>';
+      }).join('') + '</div>';
+    });
+    if (S.loose.length) h += '<p style="margin:8px 0 6px;font-weight:800;color:#f7c948">No team yet</p><div class="who">' + S.loose.map(function (p) {
+      return '<span>' + esc(p.name) + '<button data-a="move" data-id="' + p.id + '" data-team="0">1</button><button data-a="move" data-id="' + p.id + '" data-team="1">2</button></span>';
+    }).join('') + '</div>';
+    h += '</div><button class="btn red" data-a="end">End this game</button></div>';
+    m.innerHTML = h;
+  }
+})();
+</script>
+</body>
+</html>
