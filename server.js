@@ -124,12 +124,14 @@ function newRoom() {
     players: new Map(),
     teams: [{ name: '', order: [] }, { name: '', order: [] }],
     hostId: null,
-    settings: { fastMoney: true, useCustom: true },
+    settings: { fastMoney: true, useCustom: true, packs: ['general'], answerSecs: 10 },
     custom: [],
     used: new Set(),      // built-in question ids already seen on this TV
     usedReset: false,
-    chat: [[], []],
+    chat: [[], []],       // one private log per team
+    chatAll: [],          // everyone: both teams and the host
     chatSeq: 0,
+    answerTimer: null,    // optional countdown the host can start
     game: null,
     history: [],
     fx: [],
@@ -157,12 +159,21 @@ function removeFromTeams(room, id) {
 
 /* ------------------------------------------------------------- questions */
 
+// Built-in questions from the packs the host switched on (General if none).
+function packPool(room) {
+  const known = BANK.packs.map(p => p.id);
+  const on = (room.settings.packs || []).filter(id => known.includes(id));
+  const ids = on.length ? on : ['general'];
+  return BANK.main.filter(q => ids.includes(q.pack));
+}
+
 function buildDeck(room) {
-  let built = BANK.main.filter(q => !room.used.has(q.id));
+  const pool = packPool(room);
+  let built = pool.filter(q => !room.used.has(q.id));
   if (built.length < 8) {            // seen nearly everything: start over
-    for (const q of BANK.main) room.used.delete(q.id);
+    for (const q of pool) room.used.delete(q.id);
     room.usedReset = true;
-    built = BANK.main.slice();
+    built = pool.slice();
   }
   shuffle(built);
   const custom = room.settings.useCustom
@@ -174,19 +185,30 @@ function buildDeck(room) {
 function findQuestion(room, id) {
   if (id[0] === 'c') {
     const q = room.custom[Number(id.slice(1))];
-    return q ? { id, text: q.text, answers: q.answers } : null;
+    return q ? { id, pack: 'custom', text: q.text, answers: q.answers } : null;
   }
   return BANK.main.find(q => q.id === id) || null;
+}
+
+// Like the show, the board gets shorter as the points go up.
+const ANSWER_RANGE = { 1: [6, 8], 2: [5, 7], 3: [4, 6] };
+function answerCount(g) {
+  const [lo, hi] = g.sudden ? [4, 5] : (ANSWER_RANGE[g.round] || [4, 6]);
+  return lo + crypto.randomInt(hi - lo + 1);
 }
 
 function drawQuestion(room) {
   const g = room.game;
   for (;;) {
-    if (!g.deck.length) g.deck = shuffle(BANK.main.map(q => q.id));
+    if (!g.deck.length) g.deck = shuffle(packPool(room).map(q => q.id));
     const q = findQuestion(room, g.deck.shift());
     if (q) {
-      if (q.id[0] !== 'c') room.used.add(q.id);
-      return JSON.parse(JSON.stringify(q));
+      const copy = JSON.parse(JSON.stringify(q));
+      if (q.id[0] !== 'c') {          // the host's own questions keep every answer
+        room.used.add(q.id);
+        copy.answers = copy.answers.slice(0, answerCount(g));
+      }
+      return copy;
     }
   }
 }
@@ -478,18 +500,53 @@ function fmAction(room, a, m) {
   }
 }
 
+/* ---------------------------------------------------------- answer timer */
+
+function clearAnswerTimer(room) {
+  if (room.answerTimer) { clearTimeout(room.answerTimer.handle); room.answerTimer = null; }
+}
+
+function startAnswerTimer(room) {
+  const g = room.game;
+  const answering = g && ((g.phase === 'faceoff' && g.fo.turn != null) || g.phase === 'play' || g.phase === 'steal');
+  if (!answering) return;
+  clearAnswerTimer(room);
+  const secs = room.settings.answerSecs;
+  room.answerTimer = {
+    secs,
+    endsAt: Date.now() + secs * 1000,
+    handle: setTimeout(() => {
+      room.answerTimer = null;
+      fx(room, 'timeUp');             // just a buzzer: the host decides what it costs
+      pushAll(room);
+    }, secs * 1000)
+  };
+  fx(room, 'timerGo', { secs });
+}
+
 /* ----------------------------------------------------------- host action */
+
+const KEEPS_TIMER = new Set(['timer', 'adjust', 'move', 'kick', 'settings', 'custom']);
 
 function hostAction(room, m) {
   const g = room.game;
   const a = m.a;
+  if (!KEEPS_TIMER.has(a)) clearAnswerTimer(room);   // any game move stops the countdown
   switch (a) {
+    case 'timer':
+      if (m.stop) { if (room.answerTimer) { clearAnswerTimer(room); fx(room, 'timerStop'); } }
+      else startAnswerTimer(room);
+      break;
     case 'start':
       if (!g && room.teams[0].order.length && room.teams[1].order.length) startGame(room);
       break;
     case 'settings':
       if (typeof m.fastMoney === 'boolean') room.settings.fastMoney = m.fastMoney;
       if (typeof m.useCustom === 'boolean') room.settings.useCustom = m.useCustom;
+      if ([5, 10, 15, 20].includes(m.answerSecs)) room.settings.answerSecs = m.answerSecs;
+      if (Array.isArray(m.packs) && !g) {
+        room.settings.packs = BANK.packs.map(p => p.id).filter(id => m.packs.includes(id));
+      }
       break;
     case 'custom':
       if (!g) room.custom = cleanCustom(m.list);   // only between games
@@ -583,6 +640,7 @@ function publicState(room) {
     host: room.hostId ? pl(room.hostId) : null,
     loose: [...room.players.values()].filter(p => p.team == null && !p.isHost).map(p => pl(p.id)),
     settings: room.settings,
+    packs: BANK.packs.map(p => ({ id: p.id, name: p.name, blurb: p.blurb, adult: p.adult, count: p.questions.length })),
     customCount: room.custom.length,
     fx: room.fx,
     game: null
@@ -593,7 +651,10 @@ function publicState(room) {
     s.game = {
       round: g.round, mult: g.mult, sudden: g.sudden,
       scores: g.scores, bank: g.bank, strikes: g.strikes,
-      question: g.phase === 'question' ? null : g.q.text,
+      // Hidden until the face-off is settled, so nobody can buzz early and then read it.
+      question: (g.phase === 'question' || g.phase === 'faceoff') ? null : g.q.text,
+      pack: g.q.pack === 'custom' ? 'Your questions' : ((BANK.packs.find(p => p.id === g.q.pack) || {}).name || null),
+      timer: room.answerTimer ? { left: Math.max(0, room.answerTimer.endsAt - Date.now()), secs: room.answerTimer.secs } : null,
       count: g.q.answers.length,
       slots: g.q.answers.map((a, i) => (g.revealed[i] ? { text: a.text, pts: a.pts } : null)),
       fo: { pids: faceoffPlayers(room), open: fo.open, buzzed: fo.buzzed, turn: fo.turn, winner: fo.winner, tries: fo.tries },
@@ -645,6 +706,7 @@ function stateFor(room, pub, p) {
   s.me = { id: p.id, name: p.name, team: p.team, isHost: p.isHost,
     captain: p.team != null && room.teams[p.team].order[0] === p.id };
   if (p.team != null) s.chat = room.chat[p.team];
+  if (p.team != null || p.isHost) s.chatAll = room.chatAll;
   if (p.isHost) s.hostView = hostExtras(room);
   if (g && pub.game) {
     const pids = pub.game.fo.pids;
@@ -787,9 +849,17 @@ function onMessage(ws, m) {
     }
     case 'chat': {
       const text = clean(m.text, 200);
-      if (p.team == null || !text) break;
-      const log = room.chat[p.team];
-      log.push({ id: ++room.chatSeq, from: p.id, name: p.name, text });
+      if (!text) break;
+      let log;
+      if (m.to === 'all') {
+        if (p.team == null && !p.isHost) break;
+        log = room.chatAll;
+        log.push({ id: ++room.chatSeq, from: p.id, name: p.name, team: p.isHost ? 'host' : p.team, text });
+      } else {
+        if (p.team == null) break;
+        log = room.chat[p.team];
+        log.push({ id: ++room.chatSeq, from: p.id, name: p.name, text });
+      }
       if (log.length > 80) log.shift();
       break;
     }
@@ -845,7 +915,7 @@ setInterval(() => {
   }
   const now = Date.now();
   for (const [code, room] of rooms) {
-    if (now - room.touched > ROOM_IDLE_MS) { clearFmTimer(room); rooms.delete(code); }
+    if (now - room.touched > ROOM_IDLE_MS) { clearFmTimer(room); clearAnswerTimer(room); rooms.delete(code); }
   }
 }, 30000);
 

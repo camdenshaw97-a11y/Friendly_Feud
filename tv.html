@@ -96,6 +96,9 @@
   #codeTag b { font: 400 44px var(--display); color: #fff; letter-spacing: .12em; }
   .bank { position: absolute; left: 770px; top: 30px; width: 380px; height: 164px; display: flex; align-items: center; justify-content: center; }
   .bank div { font: 400 136px/1 var(--display); padding-top: 12px; letter-spacing: .02em; text-shadow: 0 5px 0 #000; }
+  #ansTimer { position: absolute; left: 1196px; top: 38px; width: 150px; height: 150px; border-radius: 50%; display: none; align-items: center; justify-content: center; box-sizing: border-box; padding-top: 8px; font: 400 92px/1 var(--display); background: radial-gradient(circle at 50% 35%, #1a37a0, #050d3d); box-shadow: 0 0 0 5px var(--gold), 0 0 0 10px #6b3d00, 0 0 50px #3b7bf088; }
+  #ansTimer.on { display: flex; }
+  #ansTimer.hot { color: #ff6a60; box-shadow: 0 0 0 5px var(--red), 0 0 0 10px #5a0a07, 0 0 60px #e0211b; }
   .frame {
     position: absolute; left: 365px; top: 222px; width: 1190px; height: 646px; box-sizing: border-box; padding: 34px;
     border-radius: 80px; overflow: hidden;
@@ -216,6 +219,7 @@
     <div id="roundTag" class="disp"></div>
     <div id="codeTag"></div>
     <div class="bank box"><div id="bank">0</div></div>
+    <div id="ansTimer"></div>
     <div class="side left" id="side0"><div class="tname" id="t0n"></div><div class="tscore box"><div id="t0s">0</div></div><div class="xs" id="t0x"></div><div class="roster" id="t0r"></div></div>
     <div class="frame"><div class="inner"><div id="board"></div></div></div>
     <div class="side right" id="side1"><div class="tname" id="t1n"></div><div class="tscore box"><div id="t1s">0</div></div><div class="xs" id="t1x"></div><div class="roster" id="t1r"></div></div>
@@ -337,6 +341,30 @@
     clearTimeout(bannerTimer);
     bannerTimer = setTimeout(function () { b.classList.remove('on'); }, ms || 2200);
   }
+  /* the host's optional answer timer */
+  var ansEnd = null, ansTick = null, ansLast = null;
+  function setAnswerTimer(t) {
+    var el = $('#ansTimer');
+    if (!t) {
+      ansEnd = null; ansLast = null;
+      if (ansTick) { clearInterval(ansTick); ansTick = null; }
+      el.classList.remove('on', 'hot');
+      return;
+    }
+    ansEnd = performance.now() + t.left;
+    el.classList.add('on');
+    if (!ansTick) ansTick = setInterval(paintAnswerTimer, 100);
+    paintAnswerTimer();
+  }
+  function paintAnswerTimer() {
+    if (ansEnd == null) return;
+    var el = $('#ansTimer');
+    var sec = Math.max(0, Math.ceil((ansEnd - performance.now()) / 1000));
+    el.textContent = sec;
+    el.classList.toggle('hot', sec <= 3);
+    if (sec !== ansLast) { if (ansLast != null && sec > 0) sfx.tick(); ansLast = sec; }
+  }
+
   function clearOverlays() {
     $('#xwrap').classList.remove('on'); $('#banner').classList.remove('on');
     clearTimeout(xTimer); clearTimeout(bannerTimer);
@@ -348,8 +376,8 @@
     fresh.forEach(function (e) { has[e.type] = e; });
     if (has.undo || has.lobby) clearOverlays();
 
-    if (s.phase === 'lobby') { show('lobby'); renderLobby(s); confetti(false); return; }
-    if (s.phase === 'fm') { show('fm'); renderFm(s, fresh); return; }
+    if (s.phase === 'lobby') { show('lobby'); setAnswerTimer(null); renderLobby(s); confetti(false); return; }
+    if (s.phase === 'fm') { show('fm'); setAnswerTimer(null); renderFm(s, fresh); return; }
     show('game');
     renderGame(s, fresh, has);
   }
@@ -377,7 +405,8 @@
     var ready = s.host && s.teams[0].players.length && s.teams[1].players.length;
     $('#lobbyNote').textContent = (waiting.length ? 'Still picking a team: ' + waiting.join(', ') + '.  ' : '') +
       (ready ? 'Ready when the host taps Start.' : 'Need a host and at least one player on each team.') +
-      (s.customCount ? '  ' + s.customCount + ' of your own questions loaded.' : '');
+      (s.customCount ? '  ' + s.customCount + ' of your own questions loaded.' : '') +
+      '  Packs: ' + s.packs.filter(function (p) { return s.settings.packs.indexOf(p.id) >= 0; }).map(function (p) { return p.name; }).join(', ') + '.';
   }
 
   var lastQuestion = null;
@@ -394,6 +423,7 @@
 
     // round tag
     var multName = g.mult === 2 ? 'DOUBLE POINTS' : g.mult === 3 ? 'TRIPLE POINTS' : 'SINGLE POINTS';
+    if (g.pack && g.pack !== 'General') multName += ' · ' + esc(g.pack.toUpperCase());
     $('#roundTag').innerHTML = (g.sudden ? 'SUDDEN DEATH' : 'ROUND ' + g.round) + '<small>' + multName + '</small>';
     $('#codeTag').innerHTML = 'Join at ' + esc(location.host) + '<br><b>' + esc(s.code) + '</b>';
 
@@ -417,10 +447,10 @@
     // question and status lines
     var q = $('#question');
     var qText = g.question || '';
-    if (s.phase === 'question') {
+    if (s.phase === 'question' || s.phase === 'faceoff') {   // the question stays hidden until the face-off is won
       var a = s.teams[0].players.filter(function (p) { return p.id === g.fo.pids[0]; })[0];
       var b = s.teams[1].players.filter(function (p) { return p.id === g.fo.pids[1]; })[0];
-      qText = 'Face-off: ' + (a ? a.name : T(0)) + ' vs ' + (b ? b.name : T(1)) + '. Hands on your buzzers!';
+      qText = 'Face-off: ' + (a ? a.name : T(0)) + ' vs ' + (b ? b.name : T(1)) + (s.phase === 'question' ? '. Hands on your buzzers!' : '. Listen for the question!');
     }
     if (q.textContent !== qText) { q.textContent = qText; }
     var st = '';
@@ -436,6 +466,9 @@
     if (has.strike) strikes(has.strike.n);
     if (has.buzz) { sfx.buzz(); banner((has.buzz.name || T(has.buzz.team)) + ' BUZZED IN!', 1800); }
     if (has.rebuzz) banner('BUZZERS RESET', 1200);
+    if (has.timeUp) { sfx.timeUp(); banner('TIME’S UP!', 1500, true); }
+    if (has.timerGo) sfx.lock();
+    setAnswerTimer(g.timer);
     if (has.question) sfx.question();
     if (has.play) banner((has.play.passed ? 'PASS! ' : 'PLAY! ') + T(has.play.team) + ' TAKE THE BOARD', 1900);
     if (has.award) {

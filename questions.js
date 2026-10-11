@@ -4,7 +4,7 @@
 // listed highest points first. Points are out of 100 "people surveyed".
 // These are original questions with estimated point values, not real survey data.
 
-const MAIN = [
+const GENERAL = [
   ['Name something people do as soon as they wake up.', ['Check their phone', 34], ['Use the bathroom', 22], ['Brush their teeth', 14], ['Hit snooze', 10], ['Drink coffee', 8], ['Stretch', 5], ['Shower', 4], ['Make the bed', 2]],
   ["Name something you'd find in a junk drawer.", ['Batteries', 26], ['Pens / Pencils', 20], ['Tape', 13], ['Scissors', 11], ['Rubber bands', 9], ['Old keys', 8], ['Takeout menus', 6], ['Loose change', 4]],
   ['Name a reason someone might be late to work.', ['Traffic', 38], ['Overslept', 29], ['Car trouble', 11], ['Kids', 8], ['Bad weather', 5], ["Couldn't find keys", 4], ['Hungover', 3]],
@@ -121,12 +121,168 @@ const FAST = [
   ['Name a way people get to work.', ['Car', 71], ['Bus', 10], ['Train', 8], ['Bike', 5], ['Walk', 4]]
 ];
 
-function build(list, prefix) {
+const SPORTS = [
+  ['Name a sport that uses a ball.', ['Soccer', 24], ['Basketball', 22], ['Football', 20], ['Baseball', 14], ['Tennis', 8], ['Golf', 6], ['Volleyball', 4], ['Bowling', 2]],
+  ['Name something a fan wears to a game.', ['Jersey', 44], ['Hat', 20], ['Face paint', 12], ['Foam finger', 8], ['Team scarf', 6], ['Team colors', 5], ['A costume', 3]],
+  ['Name a reason a player gets ejected from a game.', ['Fighting', 38], ['Arguing with the ref', 26], ['Flagrant foul', 12], ['Cursing', 9], ['Too many fouls', 7], ['Throwing equipment', 5], ['Cheating', 3]],
+  ["Name something you'd find in a locker room.", ['Lockers', 27], ['Towels', 20], ['Showers', 17], ['Benches', 12], ['Sweaty clothes', 9], ['Jerseys', 7], ['Deodorant', 5], ['A whiteboard', 3]],
+  ['Name a food you eat at a ballpark.', ['Hot dog', 41], ['Peanuts', 17], ['Nachos', 13], ['Popcorn', 9], ['Pretzel', 8], ['Cracker Jack', 6], ['Pizza', 4], ['Sunflower seeds', 2]],
+  ['Name something a coach yells from the sideline.', ['Defense!', 24], ['Hustle!', 21], ['Timeout!', 16], ['Shoot it!', 11], ['Come on, ref!', 10], ['Run!', 8], ['Get back!', 6], ['Pass!', 4]],
+  ['Name a sport where athletes wear helmets.', ['Football', 43], ['Hockey', 19], ['Baseball', 14], ['Cycling', 9], ['Lacrosse', 6], ['Auto racing', 5], ['Skateboarding', 3]],
+  ['Name a sport you can play alone.', ['Golf', 31], ['Running', 18], ['Swimming', 15], ['Bowling', 12], ['Skateboarding', 8], ['Surfing', 7], ['Tennis against a wall', 5], ['Cycling', 4]],
+  ['Name something athletes do to celebrate a big win.', ['Gatorade shower', 26], ['Hug', 19], ['Spray champagne', 17], ['Dance', 13], ['Pile on each other', 10], ['Cry', 7], ['Kiss the trophy', 5], ['Cut down the net', 3]],
+  ['Name something you see at every Super Bowl party.', ['Wings', 27], ['Chips and dip', 22], ['Beer', 19], ['Pizza', 11], ['A big TV', 9], ['Jerseys', 6], ['Commercial watchers', 4], ['A betting pool', 2]],
+  ['Name a piece of equipment a baseball player uses.', ['Bat', 36], ['Glove', 31], ['Helmet', 12], ['Ball', 9], ['Cleats', 6], ['Batting gloves', 4], ['Cup', 2]],
+  ['Name an excuse athletes give after losing.', ['The refs', 34], ['Injuries', 20], ['Bad weather', 12], ['Tough schedule', 10], ['Bad luck', 9], ['The other team cheated', 7], ['Off night', 5], ['Crowd noise', 3]],
+  ["Name a sport in the Summer Olympics.", ['Swimming', 26], ['Gymnastics', 22], ['Track and field', 20], ['Basketball', 11], ['Diving', 7], ['Soccer', 6], ['Volleyball', 5], ['Wrestling', 3]],
+  ['Name something a referee carries or wears.', ['Whistle', 46], ['Striped shirt', 21], ['Flag', 14], ['Yellow / Red cards', 9], ['Hat', 5], ['Stopwatch', 3], ['Coin', 2]],
+  ["Name a reason you'd skip the gym.", ['Too tired', 33], ['No time', 21], ['Sore', 14], ['Lazy', 11], ['Sick', 8], ['Bad weather', 6], ["It's too crowded", 4], ['Forgot gym clothes', 3]],
+  ['Name a position on a football team.', ['Quarterback', 47], ['Running back', 13], ['Wide receiver', 12], ['Linebacker', 9], ['Kicker', 7], ['Center', 5], ['Tight end', 4], ['Safety', 3]],
+  ['Name something fans do during halftime.', ['Get food', 30], ['Use the bathroom', 28], ['Get a beer', 16], ['Check their phone', 10], ['Watch the halftime show', 8], ['Stretch their legs', 5], ['Talk about the game', 3]],
+  ["Name a sport where you'd get wet.", ['Swimming', 34], ['Surfing', 19], ['Water polo', 14], ['Diving', 11], ['Rowing / Kayaking', 8], ['Water skiing', 7], ['Sailing', 4], ['Fishing', 3]],
+  ["Name something you'd hear a sports announcer say.", ['Touchdown!', 23], ['He shoots, he scores!', 18], ['Goal!', 15], ['Home run!', 13], ['What a play!', 10], ["It's good!", 8], ['The crowd goes wild!', 7], ['Unbelievable!', 5]],
+  ['Name a sport people bet on.', ['Football', 38], ['Horse racing', 21], ['Basketball', 14], ['Boxing / MMA', 11], ['Baseball', 7], ['Soccer', 5], ['Golf', 3]]
+];
+
+const CARS = [
+  ['Name something people hang from their rearview mirror.', ['Air freshener', 44], ['Fuzzy dice', 19], ['Rosary / Cross', 11], ['Graduation tassel', 9], ['Parking pass', 8], ['Mask', 5], ['Necklace', 4]],
+  ['Name a reason someone gets pulled over.', ['Speeding', 52], ['Broken taillight', 14], ['Running a red light', 11], ['Swerving', 8], ['Expired tags', 7], ['On their phone', 5], ['No seatbelt', 3]],
+  ['Name something you check before buying a used car.', ['Mileage', 31], ['Engine', 19], ['Tires', 14], ['Accident history', 12], ['Price', 9], ['Brakes', 6], ['Rust', 5], ['The smell', 3]],
+  ['Name a car brand people think is fancy.', ['Mercedes', 24], ['BMW', 22], ['Ferrari', 14], ['Lamborghini', 12], ['Rolls-Royce', 9], ['Porsche', 8], ['Bentley', 6], ['Tesla', 5]],
+  ['Name a part of a car that always seems to break.', ['Battery', 24], ['Tires', 21], ['Brakes', 15], ['AC', 12], ['Transmission', 10], ['Check engine light', 8], ['Windshield wipers', 6], ['Alternator', 4]],
+  ['Name something people do to show off their car.', ['Rev the engine', 28], ['Wash and wax it', 20], ['Blast the music', 15], ['Burnouts', 12], ['Post pictures', 9], ['Cruise slow', 7], ['Add big rims', 6], ['Loud exhaust', 3]],
+  ["Name something you'd find on the floor of a messy car.", ['Fast food bags', 30], ['Empty bottles', 24], ['Receipts', 12], ['Clothes', 10], ['Loose change', 9], ['Old french fries', 7], ['Napkins', 5], ['Shoes', 3]],
+  ['Name something a bad driver does.', ["Doesn't use a blinker", 27], ['Texts', 21], ['Tailgates', 16], ['Speeds', 12], ['Cuts people off', 10], ['Drives too slow', 7], ['Runs stop signs', 4], ['Brake checks', 3]],
+  ['Name a sound a car makes when something is wrong.', ['Squealing', 26], ['Grinding', 21], ['Knocking', 18], ['Rattling', 13], ['Clicking', 9], ['Hissing', 6], ['A bang', 4], ['Beeping', 3]],
+  ['Name something teens do in a car that parents hate.', ['Speed', 27], ['Blast music', 20], ['Text and drive', 18], ['Make out', 12], ['Leave trash', 8], ['Pile in too many friends', 7], ['Stay out late', 5], ['Run it out of gas', 3]],
+  ['Name something you do at a gas station besides get gas.', ['Buy snacks', 33], ['Use the bathroom', 24], ['Buy a drink', 15], ['Wash the windshield', 10], ['Air up the tires', 7], ['Buy lottery tickets', 6], ['Car wash', 3], ['Vacuum', 2]],
+  ['Name a car color.', ['Black', 24], ['White', 22], ['Red', 18], ['Silver / Gray', 15], ['Blue', 12], ['Green', 4], ['Yellow', 3], ['Orange', 2]],
+  ["Name something on a car's dashboard.", ['Speedometer', 31], ['Gas gauge', 22], ['Radio / Screen', 14], ['Check engine light', 11], ['AC vents', 8], ['Clock', 6], ['Odometer', 5], ['Glove box', 3]],
+  ['Name something people do while waiting in a drive-thru line.', ['Check their phone', 36], ['Decide what to order', 20], ['Listen to music', 14], ['Count their money', 9], ['Talk to passengers', 8], ['Complain', 7], ['Inch forward', 4], ['Honk', 2]],
+  ['Name a feature people want in a new car.', ['Backup camera', 21], ['Heated seats', 19], ['Bluetooth / CarPlay', 17], ['Sunroof', 14], ['Good gas mileage', 11], ['Leather seats', 8], ['Remote start', 6], ['Self-parking', 4]],
+  ["Name a reason your car won't start.", ['Dead battery', 51], ['Out of gas', 20], ['Bad starter', 10], ['Cold weather', 7], ['Left the lights on', 6], ['Bad alternator', 4], ['Wrong key', 2]],
+  ['Name something people yell at other drivers.', ['Go! / Move!', 26], ['A cuss word', 24], ['Learn to drive!', 17], ['Use your blinker!', 12], ['Get off your phone!', 9], ['Idiot!', 7], ['Pick a lane!', 5]],
+  ['Name a famous movie or TV car.', ['Batmobile', 26], ['DeLorean', 21], ['Herbie', 12], ['KITT', 11], ['Lightning McQueen', 10], ['General Lee', 7], ['Mystery Machine', 7], ['Ecto-1', 6]],
+  ["Name something you'd see at a car show.", ['Classic cars', 28], ['Sports cars', 20], ['Lowriders', 13], ['Shiny engines', 11], ['Trophies', 9], ['Models', 7], ['Food trucks', 6], ['Motorcycles', 4]],
+  ['Name the worst thing to spill in your car.', ['Milk', 31], ['Coffee', 22], ['Soda', 16], ['Gas / Oil', 9], ['Paint', 8], ['Wine', 6], ['Nail polish', 4], ['Ketchup', 3]]
+];
+
+const HOLIDAYS = [
+  ['Name something people put on a Christmas tree.', ['Ornaments', 33], ['Lights', 27], ['Star', 14], ['Tinsel', 9], ['Angel', 7], ['Candy canes', 5], ['Garland', 3], ['Popcorn string', 2]],
+  ['Name a food on the Thanksgiving table.', ['Turkey', 41], ['Stuffing', 16], ['Mashed potatoes', 14], ['Cranberry sauce', 9], ['Pumpkin pie', 8], ['Gravy', 5], ['Mac and cheese', 4], ['Green bean casserole', 3]],
+  ['Name a popular Halloween costume.', ['Witch', 22], ['Ghost', 18], ['Vampire', 14], ['Zombie', 11], ['Superhero', 10], ['Pirate', 9], ['Princess', 8], ['Cat', 6]],
+  ["Name something people do on New Year's Eve.", ['Drink champagne', 27], ['Kiss at midnight', 22], ['Watch the ball drop', 19], ['Party', 13], ['Count down', 9], ['Fireworks', 5], ['Make resolutions', 3], ['Fall asleep early', 2]],
+  ["Name a New Year's resolution people break.", ['Lose weight', 30], ['Go to the gym', 24], ['Save money', 13], ['Eat healthy', 12], ['Quit drinking', 8], ['Quit smoking', 6], ['Less phone time', 4], ['Read more', 3]],
+  ['Name something people do on the Fourth of July.', ['Fireworks', 44], ['BBQ', 26], ['Beach or pool', 10], ['Parade', 7], ['Drink', 6], ['Wear red, white and blue', 4], ['Sparklers', 3]],
+  ['Name a gift nobody wants.', ['Socks', 28], ['Fruitcake', 19], ['Ugly sweater', 14], ['Underwear', 10], ['Candle', 9], ['A useless gift card', 8], ['A re-gift', 7], ['Coal', 5]],
+  ['Name something a kid leaves out for Santa.', ['Cookies', 52], ['Milk', 27], ['Carrots for the reindeer', 11], ['A letter', 6], ['A stocking', 2], ['Hot cocoa', 2]],
+  ['Name a reason the holidays are stressful.', ['Buying gifts / Money', 34], ['Family', 24], ['Travel', 13], ['Cooking', 11], ['Crowded stores', 8], ['Decorating', 5], ['Weather', 3], ['Cleaning the house', 2]],
+  ["Name something you'd find in an Easter basket.", ['Chocolate bunny', 30], ['Eggs', 25], ['Jelly beans', 16], ['Peeps', 12], ['Fake grass', 8], ['Toys', 5], ['Stuffed animal', 4]],
+  ["Name something people give on Valentine's Day.", ['Chocolate', 31], ['Flowers', 30], ['Card', 13], ['Jewelry', 10], ['Teddy bear', 8], ['Dinner', 5], ['Perfume', 3]],
+  ["Name something associated with St. Patrick's Day.", ['Green', 30], ['Beer', 22], ['Leprechauns', 15], ['Shamrocks', 13], ['Pot of gold', 7], ['Parade', 6], ['Pinching', 4], ['Corned beef', 3]],
+  ['Name a Christmas movie.', ['Home Alone', 26], ['Elf', 22], ['The Grinch', 14], ["It's a Wonderful Life", 9], ['A Christmas Story', 9], ['The Polar Express', 7], ['Die Hard', 7], ['Rudolph', 5]],
+  ['Name something a relative always asks at holiday dinner.', ['Are you dating anyone?', 31], ['Getting married?', 18], ["How's work / school?", 17], ['Having kids yet?', 12], ['Have you gained weight?', 8], ['Got a real job yet?', 7], ['Did you get taller?', 4], ['Want seconds?', 3]],
+  ['Name something people do with a pumpkin.', ['Carve it', 49], ['Make pie', 21], ['Decorate the porch', 10], ['Roast the seeds', 8], ['Paint it', 6], ['Smash it', 4], ['Pumpkin spice latte', 2]],
+  ['Name something you see everywhere in December.', ['Christmas lights', 29], ['Christmas trees', 21], ['Santa', 14], ['Snow', 10], ['Wreaths', 8], ['Shoppers', 7], ['Inflatable decorations', 6], ['Ugly sweaters', 5]],
+  ['Name a candy people hand out on Halloween.', ['Snickers', 20], ["Reese's", 19], ["M&M's", 15], ['Kit Kat', 13], ['Candy corn', 11], ['Skittles', 9], ['Tootsie Rolls', 8], ['Lollipops', 5]],
+  ['Name something people do with a day off for a holiday.', ['Sleep in', 31], ['Cook out', 19], ['Travel', 13], ['Visit family', 12], ['Shop the sales', 9], ['Watch TV', 8], ['Go to the beach', 5], ['Nothing', 3]],
+  ['Name something that ruins a holiday dinner.', ['A family argument', 32], ['Burnt food', 22], ['Politics', 16], ['Someone gets too drunk', 11], ['Dry turkey', 8], ['Late guests', 5], ['Kids screaming', 4], ['The dog eats it', 2]],
+  ["Name something people do on Mother's Day.", ['Brunch', 27], ['Give flowers', 25], ['Give a card', 16], ['Call Mom', 13], ['Breakfast in bed', 9], ['Go to dinner', 6], ['Buy a gift', 4]]
+];
+
+const FOOD = [
+  ['Name something people put on a burger.', ['Cheese', 27], ['Lettuce', 16], ['Tomato', 14], ['Ketchup', 13], ['Pickles', 10], ['Onions', 9], ['Bacon', 7], ['Mustard', 4]],
+  ['Name a food you eat with chopsticks.', ['Sushi', 41], ['Noodles / Ramen', 23], ['Rice', 14], ['Dumplings', 9], ['Orange chicken', 6], ['Stir fry', 4], ['Egg rolls', 3]],
+  ['Name a drink people order at a bar.', ['Beer', 31], ['Margarita', 17], ['Vodka soda', 12], ['Jack and Coke', 11], ['Wine', 10], ['Shots', 9], ['Martini', 6], ['Rum and Coke', 4]],
+  ["Name something you'd find at a salad bar.", ['Lettuce', 26], ['Tomatoes', 17], ['Croutons', 14], ['Ranch / Dressing', 13], ['Cucumbers', 10], ['Cheese', 8], ['Bacon bits', 7], ['Eggs', 5]],
+  ['Name a food people burn.', ['Toast', 39], ['Popcorn', 15], ['Pizza', 11], ['Cookies', 10], ['Bacon', 9], ['Rice', 7], ['Grilled cheese', 5], ['Eggs', 4]],
+  ['Name a late-night food.', ['Pizza', 30], ['Tacos', 22], ['Burgers', 13], ['Cereal', 10], ['Fries', 8], ['Ramen', 7], ['Ice cream', 6], ['Burrito', 4]],
+  ['Name something you dip in ranch.', ['Wings', 24], ['Pizza', 21], ['Carrots / Veggies', 20], ['Fries', 14], ['Chicken tenders', 12], ['Chips', 5], ['Mozzarella sticks', 4]],
+  ["Name a food that's messy to eat.", ['Ribs', 23], ['Tacos', 19], ['Wings', 16], ['Spaghetti', 14], ['Burgers', 9], ['Sloppy joes', 8], ['Ice cream cone', 6], ['Corn on the cob', 5]],
+  ['Name something people put in their coffee.', ['Creamer / Milk', 44], ['Sugar', 31], ['Flavored syrup', 9], ['Ice', 6], ['Whipped cream', 4], ['Cinnamon', 3], ['Liquor', 3]],
+  ['Name a breakfast food.', ['Eggs', 26], ['Pancakes', 21], ['Bacon', 18], ['Cereal', 12], ['Waffles', 8], ['Toast', 6], ['Sausage', 5], ['Oatmeal', 4]],
+  ['Name a food people say they hate but have never tried.', ['Sushi', 24], ['Liver', 16], ['Brussels sprouts', 14], ['Oysters', 13], ['Tofu', 11], ['Anchovies', 9], ['Snails', 8], ['Caviar', 5]],
+  ["Name something you'd eat at a BBQ.", ['Burgers', 25], ['Ribs', 20], ['Hot dogs', 18], ['Chicken', 11], ['Potato salad', 9], ['Corn on the cob', 7], ['Brisket', 6], ['Baked beans', 4]],
+  ['Name a reason to send food back at a restaurant.', ['Cold', 31], ['Undercooked', 24], ['Wrong order', 19], ['Hair in it', 12], ['Overcooked', 7], ['Too salty', 4], ['Bug in it', 3]],
+  ["Name a food people eat when they're sick.", ['Soup', 54], ['Crackers', 17], ['Toast', 10], ['Popsicles', 6], ['Jell-O', 5], ['Oatmeal', 4], ['Rice', 2]],
+  ['Name a food that comes in a can.', ['Soup', 24], ['Beans', 22], ['Tuna', 17], ['Corn', 13], ['Soda', 8], ['Chili', 6], ['Spam', 6], ['Peaches', 4]],
+  ['Name a dessert.', ['Cake', 26], ['Ice cream', 25], ['Pie', 14], ['Brownies', 11], ['Cookies', 10], ['Cheesecake', 8], ['Donuts', 4], ['Pudding', 2]],
+  ["Name something you'd order at a Mexican restaurant.", ['Tacos', 36], ['Burrito', 22], ['Enchiladas', 12], ['Chips and salsa', 11], ['Quesadilla', 8], ['Fajitas', 6], ['Margarita', 3], ['Nachos', 2]],
+  ['Name a food you put syrup on.', ['Pancakes', 46], ['Waffles', 30], ['French toast', 15], ['Ice cream', 4], ['Fried chicken', 3], ['Oatmeal', 2]],
+  ['Name something customers do that annoys a server.', ['Snap their fingers', 23], ["Don't tip", 22], ['Change their order', 14], ['Stay too long', 12], ['Let kids run wild', 10], ['Stay on their phone', 8], ['Split the check ten ways', 7], ['Send food back', 4]],
+  ['Name a food people fight over the last piece of.', ['Pizza', 42], ['Cake', 13], ['Wings', 11], ['Fries', 10], ['Bacon', 9], ['Cookies', 7], ['Chicken nugget', 5], ['Garlic bread', 3]]
+];
+
+const SCREEN = [
+  ['Name a type of movie.', ['Comedy', 26], ['Horror', 22], ['Action', 19], ['Romance', 12], ['Drama', 8], ['Sci-fi', 6], ['Animated', 4], ['Documentary', 3]],
+  ['Name a superhero.', ['Superman', 24], ['Batman', 23], ['Spider-Man', 21], ['Iron Man', 10], ['Wonder Woman', 8], ['Captain America', 6], ['Hulk', 5], ['Thor', 3]],
+  ['Name something that always happens in a horror movie.', ['Someone goes off alone', 24], ["The car won't start", 17], ['Someone trips running', 16], ['The lights go out', 13], ['No phone signal', 11], ['They split up', 9], ['The killer comes back', 6], ['They check out the noise', 4]],
+  ['Name a famous cartoon character.', ['Mickey Mouse', 28], ['SpongeBob', 19], ['Bugs Bunny', 13], ['Homer Simpson', 11], ['Shrek', 9], ['Scooby-Doo', 8], ['Elsa', 7], ['Buzz Lightyear', 5]],
+  ['Name an instrument people learn as kids.', ['Piano', 34], ['Guitar', 22], ['Recorder', 14], ['Violin', 11], ['Drums', 8], ['Trumpet', 5], ['Flute', 4], ['Clarinet', 2]],
+  ["Name a reason you'd stop watching a show.", ['It got boring', 33], ['Favorite character left', 18], ['Too many seasons', 13], ['Bad writing', 12], ['No time', 9], ['Lost the password', 7], ['Too confusing', 5], ['It got canceled', 3]],
+  ['Name something people do at a concert.', ['Sing along', 30], ['Dance', 21], ['Record on their phone', 20], ['Drink', 11], ['Scream', 8], ['Buy merch', 5], ['Wave a phone light', 3], ['Crowd surf', 2]],
+  ['Name a streaming service.', ['Netflix', 44], ['Hulu', 15], ['Disney+', 13], ['Max / HBO', 9], ['Prime Video', 8], ['YouTube', 5], ['Peacock', 3], ['Apple TV+', 3]],
+  ['Name a reality TV show.', ['Survivor', 18], ['The Bachelor', 17], ['The Kardashians', 15], ['Big Brother', 12], ['Love Island', 11], ['American Idol', 10], ['Jersey Shore', 9], ['Real Housewives', 8]],
+  ['Name a movie that makes people cry.', ['Titanic', 27], ['The Notebook', 22], ['Marley & Me', 12], ['Up', 11], ['The Lion King', 9], ['Coco', 7], ['Forrest Gump', 6], ['Bambi', 5]],
+  ['Name a job on a movie set.', ['Actor', 39], ['Director', 23], ['Stunt double', 11], ['Producer', 8], ['Camera operator', 7], ['Makeup artist', 5], ['Writer', 4], ['Extra', 3]],
+  ['Name a song everyone knows the words to.', ['Happy Birthday', 26], ["Don't Stop Believin'", 16], ['Bohemian Rhapsody', 14], ['Sweet Caroline', 13], ['Mr. Brightside', 10], ['Twinkle Twinkle', 8], ['The national anthem', 7], ["Livin' on a Prayer", 6]],
+  ['Name something you do while binge-watching a show.', ['Eat snacks', 36], ['Scroll on your phone', 20], ['Fall asleep', 15], ['Skip the intro', 10], ['Lie on the couch', 8], ['Ignore texts', 5], ['Order food', 4], ['Say "one more episode"', 2]],
+  ['Name a famous movie villain.', ['Darth Vader', 28], ['The Joker', 23], ['Voldemort', 12], ['Thanos', 10], ['Hannibal Lecter', 8], ['Freddy Krueger', 7], ['Scar', 6], ['Michael Myers', 5]],
+  ['Name a kind of music.', ['Rap / Hip-hop', 23], ['Country', 21], ['Rock', 19], ['Pop', 15], ['R&B', 8], ['Jazz', 6], ['Classical', 5], ['EDM', 3]],
+  ['Name a TV game show.', ['Wheel of Fortune', 27], ['Jeopardy', 25], ['The Price Is Right', 20], ['Family Feud', 13], ['Deal or No Deal', 6], ['Millionaire', 5], ["Let's Make a Deal", 3]],
+  ['Name something annoying people do at the movie theater.', ['Talk', 34], ['Use their phone', 27], ['Kick your seat', 13], ['Chew loudly', 9], ['Show up late', 6], ['Bring a crying baby', 5], ['Laugh too loud', 4], ['Spoil the ending', 2]],
+  ['Name a movie series with a lot of sequels.', ['Fast & Furious', 26], ['Star Wars', 20], ['Harry Potter', 12], ['Marvel / Avengers', 12], ['Rocky', 9], ['Jurassic Park', 8], ['Saw', 7], ['Toy Story', 5]],
+  ['Name a famous band.', ['The Beatles', 30], ['The Rolling Stones', 14], ['Queen', 13], ['Nirvana', 10], ['AC/DC', 9], ['Metallica', 8], ['Eagles', 8], ['Coldplay', 6]],
+  ['Name something a DJ says.', ['Put your hands up!', 27], ['Make some noise!', 24], ["Let's go!", 14], ['Get on the dance floor!', 12], ['Last call!', 8], ['Any requests?', 7], ['Their own name', 5], ['This one is for the ladies!', 3]]
+];
+
+// Adults only. Off unless the host turns it on.
+const LATE = [
+  ['Name something people regret the morning after a wild night.', ['Texting their ex', 26], ['Drinking too much', 23], ['Who they went home with', 16], ['Spending too much', 12], ['What they posted', 9], ['That last shot', 7], ['What they ate', 4], ['A tattoo', 3]],
+  ["Name a place people hook up that isn't a bedroom.", ['Car', 37], ['Shower', 16], ['Couch', 14], ['Beach', 10], ['Kitchen', 8], ['Movie theater', 6], ['Office', 5], ['Airplane', 3]],
+  ['Name a red flag on a first date.', ['Rude to the waiter', 26], ['Talks about their ex', 22], ['On their phone all night', 15], ['Only talks about themselves', 13], ['Shows up late', 8], ['Drinks way too much', 7], ['"Forgot" their wallet', 6], ['Still lives with their ex', 3]],
+  ["Name something people do drunk that they'd never do sober.", ['Sing karaoke', 22], ['Text their ex', 21], ['Dance on a table', 15], ['Cry', 11], ['Say "I love you"', 10], ['Fight', 8], ['Skinny dip', 7], ['Get a tattoo', 5]],
+  ['Name a drinking game.', ['Beer pong', 36], ['Flip cup', 17], ['Kings', 14], ['Never have I ever', 11], ['Rage cage', 8], ['Quarters', 6], ['Power hour', 4], ['Edward Fortyhands', 3]],
+  ["Name something you'd find in a bachelor's apartment.", ['Empty beer cans', 22], ['Video game console', 20], ['Pizza boxes', 16], ['Dirty laundry', 14], ['A giant TV', 11], ['One towel', 7], ['Protein powder', 6], ['A mattress on the floor', 4]],
+  ['Name a lie people tell on dating apps.', ['Their height', 29], ['Their age', 22], ['Old photos', 17], ['Their job', 10], ['"I love hiking"', 8], ['"Just looking for friends"', 6], ['Their weight', 5], ['"I never do this"', 3]],
+  ['Name a reason someone gets kicked out of a bar.', ['Fighting', 34], ['Too drunk', 28], ['Throwing up', 11], ['Not paying', 8], ['Harassing people', 7], ['Fake ID', 6], ['Dancing on the bar', 4], ['Sneaking in drinks', 2]],
+  ['Name a hangover cure people swear by.', ['Greasy food', 27], ['Water', 21], ['Hair of the dog', 13], ['Gatorade', 12], ['Sleep', 10], ['Coffee', 8], ['Ibuprofen', 6], ['A cold shower', 3]],
+  ["Name something people do to get someone's attention at a bar.", ['Buy them a drink', 33], ['Make eye contact', 19], ['Dance near them', 13], ['Use a pickup line', 12], ['Send a friend over', 9], ['Bump into them', 7], ['Laugh really loud', 4], ['Wave money around', 3]],
+  ["Name a text you shouldn't send after midnight.", ['"You up?"', 38], ['"I miss you"', 24], ['Anything to your ex', 14], ['"I love you"', 9], ['A text to your boss', 7], ['A selfie', 5], ['"Come over"', 3]],
+  ['Name something couples fight about.', ['Money', 28], ['Chores', 19], ['The in-laws', 13], ['Jealousy / The ex', 12], ['Where to eat', 10], ['The thermostat', 7], ['Phone time', 6], ['Driving', 5]],
+  ['Name something you hide when your parents come over.', ['Alcohol', 28], ['The mess', 21], ['Your vape', 14], ['Your date', 11], ['Dirty laundry', 9], ['Bills', 7], ['A tattoo', 6], ['That one drawer', 4]],
+  ['Name something people do in Vegas.', ['Gamble', 39], ['Drink', 21], ['See a show', 12], ['Get married', 10], ['Go to a club', 7], ['Lose money', 5], ['Pool party', 4], ['Hit the buffet', 2]],
+  ['Name the worst place to run into your ex.', ["When you're on a date", 24], ['Grocery store', 19], ['The gym', 14], ['A wedding', 12], ['Work', 11], ['A bar', 9], ["Their parents' house", 6], ["The doctor's office", 5]],
+  ['Name a reason a date ends early.', ['No chemistry', 27], ['Fake emergency call', 20], ['They were rude', 15], ['Too drunk', 11], ["Didn't match the photos", 10], ['Got sick', 7], ['The ex showed up', 6], ['Work in the morning', 4]],
+  ["Name something people only do when nobody's home.", ['Walk around naked', 36], ['Sing loudly', 21], ['Dance', 13], ['Eat junk food', 9], ['Blast music', 8], ['Talk to themselves', 6], ['Snoop', 4], ['Skip the shower', 3]],
+  ['Name something a good wingman does.', ['Hypes you up', 28], ['Distracts the friend', 24], ['Starts the conversation', 16], ['Buys a round', 10], ['Brags about you', 9], ['Leaves at the right time', 6], ['Takes the photo', 4], ['Drives everyone home', 3]],
+  ['Name something people blame on alcohol.', ['Bad texts', 24], ['Hooking up', 20], ['Fighting', 14], ['Bad dancing', 12], ['Overspending', 10], ['Crying', 8], ['Saying "I love you"', 7], ['Falling down', 5]],
+  ['Name a pickup line people actually use.', ['"Come here often?"', 31], ['"Can I buy you a drink?"', 26], ['"Fall from heaven?"', 16], ['"What\'s your sign?"', 9], ['"Are you a parking ticket?"', 7], ['"Do I know you?"', 6], ['"Nice shoes"', 3], ['"Hey"', 2]]
+];
+
+function build(list, prefix, pack) {
   return list.map((row, i) => ({
     id: prefix + (i + 1),
+    pack: pack || null,
     text: row[0],
     answers: row.slice(1).map(([text, pts]) => ({ text, pts }))
   }));
 }
 
-module.exports = { main: build(MAIN, 'm'), fast: build(FAST, 'f') };
+// Question packs the host can switch on in the lobby.
+// Ids: one letter per pack ("c" is reserved for the host's own questions, "f" for Fast Money).
+const PACKS = [
+  { id: 'general', name: 'General', blurb: 'A bit of everything.', adult: false, questions: build(GENERAL, 'm', 'general') },
+  { id: 'sports', name: 'Sports', blurb: 'Games, fans and gym excuses.', adult: false, questions: build(SPORTS, 's', 'sports') },
+  { id: 'cars', name: 'Cars', blurb: 'Driving, drivers and what breaks.', adult: false, questions: build(CARS, 'k', 'cars') },
+  { id: 'holidays', name: 'Holidays', blurb: 'Christmas to the Fourth of July.', adult: false, questions: build(HOLIDAYS, 'h', 'holidays') },
+  { id: 'food', name: 'Food & Drink', blurb: 'Eating out, snacks and bar orders.', adult: false, questions: build(FOOD, 'd', 'food') },
+  { id: 'screen', name: 'Movies, TV & Music', blurb: 'Pop culture.', adult: false, questions: build(SCREEN, 'e', 'screen') },
+  { id: 'late', name: 'Late Night', blurb: 'Adults only: dating, drinking, bad decisions.', adult: true, questions: build(LATE, 'n', 'late') }
+];
+
+module.exports = {
+  packs: PACKS,
+  main: [].concat(...PACKS.map(p => p.questions)),
+  fast: build(FAST, 'f')
+};

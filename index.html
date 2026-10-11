@@ -122,17 +122,39 @@
   @keyframes pulse { 50% { box-shadow: 0 12px 0 #5c0603, 0 0 0 8px #2a0301, 0 0 0 20px #e0211b44, 0 22px 40px #000a, inset 0 -10px 24px #0005, inset 0 10px 20px #ffffff44; } }
   #buzzNote { font-weight: 700; font-size: 14px; color: #dfe7ff; text-align: center; margin: 0; padding: 0 16px; line-height: 1.35; }
   .chat { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #030726; border-top: 2px solid #24358a; }
-  .chat-head { padding: 6px 12px; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--gold); }
-  #chatLog { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 2px 10px 6px; display: flex; flex-direction: column; gap: 4px; }
-  #chatLog .m { max-width: 86%; background: #0d1a5c; border-radius: 12px 12px 12px 3px; padding: 6px 10px; font-size: 15px; line-height: 1.3; align-self: flex-start; overflow-wrap: anywhere; }
-  #chatLog .m b { display: block; font-size: 11px; letter-spacing: .05em; color: #86adff; }
-  #chatLog .m.me { align-self: flex-end; background: #2a45c9; border-radius: 12px 12px 3px 12px; }
-  #chatLog .m.me b { display: none; }
-  #chatLog .hint { color: #7f90d6; font-size: 13px; text-align: center; margin: auto 10px; line-height: 1.4; }
-  #chatForm { display: flex; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); background: #030726; }
-  #chatForm input { flex: 1; min-width: 0; font: 16px var(--text); color: #fff; background: #0d1a5c; border: 2px solid #24358a; border-radius: 999px; padding: 10px 16px; }
-  #chatForm input:focus { outline: none; border-color: var(--gold); }
-  #chatForm button { border: 0; border-radius: 999px; padding: 0 18px; font: 800 15px var(--text); background: var(--gold); color: #231700; }
+  .chat-tabs { display: flex; gap: 6px; padding: 6px 10px 0; }
+  .chat-tabs button { flex: 1; position: relative; border: 0; border-radius: 10px 10px 0 0; padding: 9px 6px 8px; font: 800 12px var(--text); letter-spacing: .08em; color: #9fb0ee; background: #0a1445; }
+  .chat-tabs button.on { background: #1b2b80; color: #fff; }
+  .chat-tabs button[data-ch=all].on { background: #9a3412; }
+  .chat-tabs button i { display: none; position: absolute; top: 7px; right: 10px; width: 9px; height: 9px; border-radius: 50%; background: #ff5a50; box-shadow: 0 0 0 2px #030726; }
+  .chat-tabs button.new i { display: block; }
+  .chat-head { padding: 5px 12px; font-size: 11px; font-weight: 800; letter-spacing: .06em; color: #fff; background: #1b2b80; }
+  .chat.all .chat-head { background: #9a3412; }
+  .chatlog { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; }
+  .chatlog[hidden] { display: none; }
+  .chatlog .m { max-width: 86%; background: #0d1a5c; border-radius: 12px 12px 12px 3px; padding: 6px 10px; font-size: 15px; line-height: 1.3; align-self: flex-start; overflow-wrap: anywhere; }
+  .chatlog .m b { display: block; font-size: 11px; letter-spacing: .05em; color: #86adff; }
+  .chatlog .m b.t1 { color: #ffb37a; }
+  .chatlog .m b.th { color: var(--gold); }
+  .chatlog .m.me { align-self: flex-end; background: #2a45c9; border-radius: 12px 12px 3px 12px; }
+  .chatlog .m.me b { display: none; }
+  .chatlog .hint { color: #7f90d6; font-size: 13px; text-align: center; margin: auto 10px; line-height: 1.4; }
+  .chatform { display: flex; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); background: #030726; }
+  .chatform input { flex: 1; min-width: 0; font: 16px var(--text); color: #fff; background: #0d1a5c; border: 2px solid #24358a; border-radius: 999px; padding: 10px 16px; }
+  .chatform input:focus { outline: none; border-color: var(--gold); }
+  .chatform button { border: 0; border-radius: 999px; padding: 0 18px; font: 800 15px var(--text); background: var(--gold); color: #231700; }
+  .chat.all .chatform input { border-color: #9a3412; }
+  .chat.all .chatform input:focus { border-color: #ff7a4d; }
+  .chat.all .chatform button { background: #ff7a4d; }
+  .hchat { display: flex; flex-direction: column; height: var(--vh, 100dvh); max-width: 520px; margin: 0 auto; border-top: 0; }
+  .hchat-top { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; }
+  .hchat-top h2 { margin: 0; }
+  .tpill { display: inline-block; min-width: 30px; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #e0211b; color: #fff; font: 400 16px/1.4 var(--display); vertical-align: middle; }
+  .badge { display: inline-block; min-width: 20px; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: #e0211b; color: #fff; font-size: 12px; line-height: 20px; }
+  .tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #e0211b; color: #fff; font-size: 11px; line-height: 18px; vertical-align: middle; }
+  .seg { display: flex; flex: none; border-radius: 10px; overflow: hidden; box-shadow: inset 0 0 0 2px #3a4da8; }
+  .seg button { border: 0; background: transparent; color: #cfdcff; font: 800 14px var(--text); padding: 9px 11px; }
+  .seg button.on { background: var(--gold); color: #231700; }
   /* fast money on phones */
   #pFm { display: none; }
   #play.fm #pFm { display: block; }
@@ -232,10 +254,15 @@
     </div>
     <div id="pFm"></div>
   </div>
-  <div class="chat">
+  <div class="chat" id="chatBox">
+    <div class="chat-tabs">
+      <button type="button" data-ch="team" class="on">MY TEAM<i></i></button>
+      <button type="button" data-ch="all">EVERYONE<i></i></button>
+    </div>
     <div class="chat-head" id="chatHead"></div>
-    <div id="chatLog"></div>
-    <form id="chatForm" autocomplete="off">
+    <div class="chatlog" id="logTeam"></div>
+    <div class="chatlog" id="logAll" hidden></div>
+    <form class="chatform" id="chatForm" autocomplete="off">
       <input id="chatIn" maxlength="200" placeholder="Message your team…" enterkeyhint="send">
       <button>Send</button>
     </form>
@@ -323,6 +350,7 @@
     S = null; me = null; hello = null; sess = null;
     F.store.del('feud.me');
     closeMenu();
+    if (hostChatOpen) { hostChatOpen = false; var hc = $('#hchat'); if (hc) hc.remove(); }
     show('join');
     $('#joinErr').textContent = msg || '';
   }
@@ -366,12 +394,26 @@
     fresh.forEach(function (e) { has[e.type] = e; });
     if (has.strike && !me.isHost) flash(has.strike.n);
     if (has.fmDup && me.isHost) { toast('Already said by player one. Ask for another answer!'); buzzPhone(200); }
+    if (has.timeUp) { toast(me.isHost ? 'Time’s up. Your call: strike, or let it slide.' : 'Time’s up!'); buzzPhone([150, 80, 150]); }
+    timerEnd = (S.game && S.game.timer) ? performance.now() + S.game.timer.left : null;
 
     if (me.isHost && S.phase !== 'lobby') { show('host'); renderHost(); }
     else if (S.phase === 'lobby' || me.team == null) { show('lobby'); renderLobby(); }
     else { show('play'); renderPlay(has); }
     if (menuOpen) renderMenu();
+    if (hostChatOpen) renderHostChat();
+    tickTimers();
   }
+
+  /* answer timer: any element marked data-timer shows the seconds left */
+  var timerEnd = null;
+  function tickTimers() {
+    var els = document.querySelectorAll('[data-timer]');
+    if (!els.length) return;
+    var sec = timerEnd == null ? '' : Math.max(0, Math.ceil((timerEnd - performance.now()) / 1000));
+    for (var i = 0; i < els.length; i++) if (els[i].textContent !== String(sec)) els[i].textContent = sec;
+  }
+  setInterval(tickTimers, 100);
 
   var flashTimer;
   function flash(n) {
@@ -437,7 +479,15 @@
         '<div class="toggle"><div>Fast Money finale<small>The winning team plays for 200 points after round 3.</small></div><button class="sw' + (st.fastMoney ? ' on' : '') + '" data-a="set" data-k="fastMoney"></button></div>' +
         '<div class="toggle"><div>Use my own questions first<small>' + (n ? n + ' loaded. Built-in questions fill the rest.' : 'None loaded yet. Built-in questions will be used.') + '</small></div><button class="sw' + (st.useCustom && n ? ' on' : '') + '" data-a="set" data-k="useCustom"' + (n ? '' : ' disabled') + '></button></div>' +
         '<div class="row" style="margin-top:8px"><button class="btn ghost sm" data-a="editor">Write questions</button>' +
-        (saved && !n ? '<button class="btn ghost sm" data-a="loadSaved">Load my ' + saved + ' saved</button>' : '') + '</div></div>';
+        (saved && !n ? '<button class="btn ghost sm" data-a="loadSaved">Load my ' + saved + ' saved</button>' : '') + '</div>' +
+        '<div class="toggle" style="margin-top:6px"><div>Answer timer<small>Optional. Tap it during a turn to hurry someone along.</small></div><div class="seg">' +
+        [5, 10, 15, 20].map(function (v) { return '<button data-a="secs" data-v="' + v + '" class="' + (st.answerSecs === v ? 'on' : '') + '">' + v + 's</button>'; }).join('') + '</div></div></div>';
+      h += '<div class="card"><h3><span>Question packs</span><small>' + st.packs.length + ' ON</small></h3>';
+      S.packs.forEach(function (pk) {
+        h += '<div class="toggle"><div>' + esc(pk.name) + (pk.adult ? '<span class="tag">18+</span>' : '') + '<small>' + esc(pk.blurb) + ' ' + pk.count + ' questions.</small></div>' +
+          '<button class="sw' + (st.packs.indexOf(pk.id) >= 0 ? ' on' : '') + '" data-a="pack" data-id="' + pk.id + '"></button></div>';
+      });
+      h += '</div>';
       var ok = S.teams[0].players.length && S.teams[1].players.length;
       h += '<button class="btn gold big" data-a="start"' + (ok ? '' : ' disabled') + '>START THE GAME</button>';
       h += '<p class="note">' + (ok ? 'Keep this phone to yourself: it shows every answer.' : 'You need at least one player on each team.') + '</p>';
@@ -449,7 +499,8 @@
       if (hostGone && (!inGame || me.team == null)) h += '<button class="btn ghost" data-a="behost">' + (S.host ? 'Take over as host' : 'Be the host') + '</button>';
       else if (!S.host) h += '<div class="who"><em>No host yet.</em></div>';
       h += '</div>';
-      if (!inGame) h += '<p class="note">' + (me.team == null ? 'The host reads the questions and runs the board, so they don’t play on a team.' : 'Waiting for the host to start. Watch the TV!') + '</p>';
+      if (!inGame) h += '<p class="note">' + (me.team == null ? 'The host reads the questions and runs the board, so they don’t play on a team.' : 'Waiting for the host to start. Watch the TV!') + '</p>' +
+        '<p class="note">Tonight’s question packs: ' + esc(S.packs.filter(function (pk) { return S.settings.packs.indexOf(pk.id) >= 0; }).map(function (pk) { return pk.name; }).join(', ')) + '</p>';
     }
     h += '<a class="link" data-a="leave">Leave the game</a></div>';
     root.innerHTML = h;
@@ -479,6 +530,12 @@
     else if (a === 'start') H('start');
     else if (a === 'loadSaved') H('custom', { list: F.savedQuestions() });
     else if (a === 'editor') openEditor();
+    else if (a === 'secs') H('settings', { answerSecs: Number(b.dataset.v) });
+    else if (a === 'pack') {
+      var list = S.settings.packs.slice(), at = list.indexOf(b.dataset.id);
+      if (at >= 0) list.splice(at, 1); else list.push(b.dataset.id);
+      if (!list.length) toast('Keep at least one pack on.'); else H('settings', { packs: list });
+    }
   });
   function openEditor() {
     editorOpen = true;
@@ -490,7 +547,6 @@
   }
 
   /* ------------------------------------------------------------- play */
-  var chatTeam = null, chatLast = 0;
   function renderPlay(has) {
     var g = S.game, root = $('#play');
     var isFm = S.phase === 'fm';
@@ -518,7 +574,9 @@
     else if (S.phase === 'roundEnd') st = (g.stolen ? 'Stolen! ' : '') + g.awarded + ' points to ' + T(g.roundWinner);
     else if (S.phase === 'gameOver') { st = (g.winner === me.team ? 'YOU WON! ' : 'Game over. Winners: ') + T(g.winner); you = g.winner === me.team; }
     else if (isFm) st = 'FAST MONEY · ' + T(g.fm.team);
-    var ps = $('#pStatus'); ps.textContent = st; ps.classList.toggle('you', you);
+    var ps = $('#pStatus');
+    ps.innerHTML = esc(st) + (g.timer && !isFm ? '<span class="tpill" data-timer></span>' : '');
+    ps.classList.toggle('you', you);
 
     // middle: buzzer, board, or fast money
     var buzzing = !isFm && !!me.faceoff;
@@ -532,29 +590,75 @@
       $('#buzzNote').textContent = live ? 'First one to buzz gets to answer.' : 'Your buzzer goes live the moment the host starts reading the question.';
     } else if (!isFm) {
       pBoard.update(g, !!has.reveal);
-      $('#pQ').textContent = g.question || '';
+      $('#pQ').textContent = g.question || ((S.phase === 'question' || S.phase === 'faceoff') ? 'Listen up: the host reads the question out loud.' : '');
       $('#pX').innerHTML = (S.phase === 'play' || S.phase === 'steal') ? xs(g.strikes) : '';
     } else renderPlayFm(g.fm);
     if (has.buzz && has.buzz.team === me.team) buzzPhone(80);
 
-    // team chat
-    if (chatTeam !== me.team) { chatTeam = me.team; chatLast = 0; $('#chatLog').innerHTML = ''; }
-    $('#chatHead').textContent = 'TEAM CHAT · ONLY ' + T(me.team) + ' CAN SEE THIS';
-    var log = $('#chatLog'), msgs = S.chat || [];
-    var near = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
-    var added = false;
+    renderChat();
+  }
+
+  /* ---- chat: a private team channel and an everyone channel ---- */
+  var chan = 'team', chatFor = null, chatFresh = true;
+  var seen = { team: 0, all: 0 }, unread = { team: false, all: false };
+  function addMsgs(log, msgs, last, showTeam) {
+    var near = log.scrollHeight - log.scrollTop - log.clientHeight < 60, added = false, others = false;
     msgs.forEach(function (c) {
-      if (c.id <= chatLast) return;
+      if (c.id <= last) return;
       var d = document.createElement('div');
       d.className = 'm' + (c.from === me.id ? ' me' : '');
-      d.innerHTML = '<b>' + esc(c.name) + '</b>' + esc(c.text);
-      log.appendChild(d); chatLast = c.id; added = true;
+      var who = esc(c.name), cls = '';
+      if (showTeam) { who += ' · ' + (c.team === 'host' ? 'HOST' : esc(T(c.team))); cls = c.team === 'host' ? 'th' : 't' + c.team; }
+      d.innerHTML = '<b class="' + cls + '">' + who + '</b>' + esc(c.text);
+      log.appendChild(d); last = c.id; added = true;
+      if (c.from !== me.id) others = true;
     });
     var hint = log.querySelector('.hint');
-    if (!msgs.length && !hint) log.innerHTML = '<div class="hint">Whisper here instead of out loud, so the other team can’t hear your answers.</div>';
-    else if (msgs.length && hint) hint.remove();
+    if (hint && log.querySelector('.m')) hint.remove();
     if (added && near) log.scrollTop = log.scrollHeight;
+    return { last: last, others: others };
   }
+  function setChan(c) {
+    chan = c; unread[c] = false;
+    $('#chatBox').classList.toggle('all', c === 'all');
+    $('#logTeam').hidden = c !== 'team'; $('#logAll').hidden = c !== 'all';
+    $('#chatIn').placeholder = c === 'all' ? 'Message EVERYONE…' : 'Message your team…';
+    var log = c === 'all' ? $('#logAll') : $('#logTeam');
+    log.scrollTop = log.scrollHeight;
+    paintChat();
+  }
+  function paintChat() {
+    var tabs = document.querySelectorAll('.chat-tabs button');
+    for (var i = 0; i < tabs.length; i++) {
+      var c = tabs[i].dataset.ch;
+      tabs[i].classList.toggle('on', c === chan);
+      tabs[i].classList.toggle('new', unread[c] && c !== chan);
+    }
+    $('#chatHead').textContent = chan === 'all'
+      ? 'EVERYONE SEES THIS: BOTH TEAMS AND THE HOST'
+      : 'PRIVATE · ONLY ' + T(me.team) + ' CAN SEE THIS';
+  }
+  function renderChat() {
+    if (chatFor !== me.team) {
+      chatFor = me.team; chatFresh = true; seen = { team: 0, all: 0 }; unread = { team: false, all: false };
+      $('#logTeam').innerHTML = '<div class="hint">Whisper here instead of out loud, so the other team can’t hear your answers.</div>';
+      $('#logAll').innerHTML = '<div class="hint">Both teams and the host can read this. Trash talk goes here, answers don’t.</div>';
+      setChan('team');
+    }
+    var a = addMsgs($('#logTeam'), S.chat || [], seen.team, false);
+    var b = addMsgs($('#logAll'), S.chatAll || [], seen.all, true);
+    seen.team = a.last; seen.all = b.last;
+    if (!chatFresh) {
+      if (a.others && chan !== 'team') unread.team = true;
+      if (b.others && chan !== 'all') unread.all = true;
+    }
+    chatFresh = false;
+    paintChat();
+  }
+  document.querySelector('.chat-tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-ch]');
+    if (b) setChan(b.dataset.ch);
+  });
 
   function renderPlayFm(fm) {
     var el = $('#pFm');
@@ -587,7 +691,7 @@
     e.preventDefault();
     var input = $('#chatIn'), text = input.value.trim();
     if (!text) return;
-    if (conn && conn.send({ t: 'chat', text: text })) { input.value = ''; var log = $('#chatLog'); setTimeout(function () { log.scrollTop = log.scrollHeight; }, 60); }
+    if (conn && conn.send({ t: 'chat', text: text, to: chan })) { input.value = ''; var log = chan === 'all' ? $('#logAll') : $('#logTeam'); setTimeout(function () { log.scrollTop = log.scrollHeight; }, 60); }
     else toast('Reconnecting… try again');
   });
   $('#chatIn').addEventListener('focus', function () { $('#play').classList.add('typing'); setTimeout(fitViewport, 300); });
@@ -601,7 +705,10 @@
     var h = '<div class="top">' + topBar(isFm ? g.fm.team : activeTeam()) + '</div><div class="wrap">';
     if (isFm) h += hostFm(g, hv);
     else h += hostRound(g, hv);
-    h += '<div class="hfoot"><button class="btn ghost sm" data-a="undo"' + (hv.canUndo ? '' : ' disabled') + '>↶ Undo last tap</button><button class="btn ghost sm" data-a="menu">Menu</button></div></div>';
+    var un = hostUnread();
+    h += '<div class="hfoot"><button class="btn ghost sm" data-a="undo"' + (hv.canUndo ? '' : ' disabled') + '>↶ Undo</button>' +
+      '<button class="btn ghost sm" data-a="chat">Chat' + (un ? '<span class="badge">' + un + '</span>' : '') + '</button>' +
+      '<button class="btn ghost sm" data-a="menu">Menu</button></div></div>';
     root.innerHTML = h;
 
     // fast money clock on the host phone
@@ -621,7 +728,8 @@
 
   function hostRound(g, hv) {
     var ph = S.phase, h = '';
-    var mult = g.mult === 2 ? ' · DOUBLE' : g.mult === 3 ? ' · TRIPLE' : '';
+    var mult = (g.mult === 2 ? ' · DOUBLE' : g.mult === 3 ? ' · TRIPLE' : '') + (g.pack && g.pack !== 'General' ? ' · ' + esc(g.pack.toUpperCase()) : '');
+    var timerBtn = '<button class="btn ghost sm" data-a="timer">' + (g.timer ? 'Stop timer · <span data-timer></span>' : '⏱ Start ' + S.settings.answerSecs + 's timer') + '</button>';
     h += '<div class="hq"><small>' + (g.sudden ? 'SUDDEN DEATH' : 'ROUND ' + g.round) + mult + (ph === 'question' || ph === 'faceoff' ? ' · READ THIS OUT LOUD' : '') + '</small><b>' + esc(hv.question || '') + '</b></div>';
     var names = g.fo.pids.map(function (id, t) { var p = S.teams[t].players.filter(function (x) { return x.id === id; })[0]; return p ? p.name : '?'; });
     var who = g.answerer ? '<b>' + esc(g.answerer.name) + '</b>' : '';
@@ -629,7 +737,7 @@
 
     if (ph === 'question') {
       p = '<p>Face-off: <b>' + esc(names[0]) + '</b> (' + esc(T(0)) + ') vs <b>' + esc(names[1]) + '</b> (' + esc(T(1)) + ').</p>' +
-        '<p>Tap the button as you start reading. That turns their buzzers on and shows the question on the TV.</p>' +
+        '<p>Tap the button as you start reading. That turns their buzzers on. The question stays hidden on every screen until the face-off is won.</p>' +
         '<button class="btn gold big" data-a="open">OPEN THE BUZZERS</button>' +
         '<div class="row"><button class="btn ghost sm" data-a="swap">Skip to a different question</button></div>';
     } else if (ph === 'faceoff' && g.fo.buzzed == null) {
@@ -641,16 +749,16 @@
       var tries = g.fo.tries;
       p = '<p>' + (tries === 0 ? who + ' (' + esc(T(g.fo.turn)) + ') buzzed first.' : tries === 1 ? 'Now ' + who + ' (' + esc(T(g.fo.turn)) + ') gets a chance to beat it.' : 'Still nothing on the board. ' + who + ' (' + esc(T(g.fo.turn)) + ') is next.') +
         '</p><p>Tap their answer below if it’s there.</p>' +
-        (tries === 0 ? '<div class="row"><button class="btn ghost sm" data-a="clearBuzz">False start: reset buzzers</button></div>' : '');
+        '<div class="row">' + timerBtn + (tries === 0 ? '<button class="btn ghost sm" data-a="clearBuzz">False start: reset</button>' : '') + '</div>';
     } else if (ph === 'passplay') {
       p = '<p><b>' + esc(T(g.fo.winner)) + '</b> won the face-off. Ask them: pass or play?</p>' +
         '<div class="row"><button class="btn gold big" data-a="pp" data-play="1">PLAY</button><button class="btn big" data-a="pp" data-play="0">PASS</button></div>';
     } else if (ph === 'play') {
       canTap = true; miss = 'STRIKE ✕';
-      p = '<p>Playing: <b>' + esc(T(g.playing)) + '</b>. Ask ' + who + '.<span class="strk xs">' + xs(g.strikes) + '</span></p>';
+      p = '<p>Playing: <b>' + esc(T(g.playing)) + '</b>. Ask ' + who + '.<span class="strk xs">' + xs(g.strikes) + '</span></p><div class="row">' + timerBtn + '</div>';
     } else if (ph === 'steal') {
       canTap = true; miss = 'NOT ON THE BOARD ✕';
-      p = '<p>Three strikes! <b>' + esc(T(g.stealTeam)) + '</b> can steal ' + g.bank + ' points with ONE answer. Give them a moment to talk it over in chat.</p>';
+      p = '<p>Three strikes! <b>' + esc(T(g.stealTeam)) + '</b> can steal ' + g.bank + ' points with ONE answer. Give them a moment to talk it over in chat.</p><div class="row">' + timerBtn + '</div>';
     } else if (ph === 'roundEnd') {
       canTap = true;
       var left = hv.answers ? hv.answers.filter(function (a) { return !a.open; }).length : 0;
@@ -730,6 +838,8 @@
     else if (a === 'next') H('next');
     else if (a === 'undo') H('undo');
     else if (a === 'menu') openMenu();
+    else if (a === 'chat') openHostChat();
+    else if (a === 'timer') H('timer', S.game.timer ? { stop: true } : {});
     else if (a === 'fmStart') H('fmStart', { pids: [$('#fm1').value, $('#fm2').value] });
     else if (a === 'fmClock') H('fmClock');
     else if (a === 'fmPick') H('fmPick', { i: Number(b.dataset.i) });
@@ -758,6 +868,38 @@
     renderMenu();
   }
   function closeMenu() { menuOpen = false; var m = $('#menu'); if (m) m.remove(); }
+
+  /* ---- host's view of the everyone chat ---- */
+  var hostChatOpen = false, hRead = 0, hSeen = 0;
+  function hostUnread() {
+    return (S.chatAll || []).filter(function (c) { return c.id > hRead && c.from !== me.id; }).length;
+  }
+  function openHostChat() {
+    hostChatOpen = true; hSeen = 0;
+    var m = document.createElement('div');
+    m.className = 'menu-back'; m.id = 'hchat';
+    m.innerHTML = '<div class="chat all hchat"><div class="hchat-top"><h2 class="t">Everyone chat</h2><button class="btn sm" data-a="close" style="width:90px">Close</button></div>' +
+      '<div class="chat-head">BOTH TEAMS SEE THIS. DON’T TYPE ANSWERS.</div><div class="chatlog" id="hLog"><div class="hint">Nothing yet. Say hi to both teams.</div></div>' +
+      '<form class="chatform" id="hForm" autocomplete="off"><input id="hIn" maxlength="200" placeholder="Message EVERYONE…" enterkeyhint="send"><button>Send</button></form></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click', function (e) { if (e.target.closest('[data-a=close]')) closeHostChat(); });
+    m.querySelector('#hForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var input = $('#hIn'), text = input.value.trim();
+      if (text && conn && conn.send({ t: 'chat', text: text, to: 'all' })) input.value = '';
+    });
+    renderHostChat();
+    var log = $('#hLog'); log.scrollTop = log.scrollHeight;
+  }
+  function closeHostChat() {
+    hostChatOpen = false; var m = $('#hchat'); if (m) m.remove();
+    if (S && me && me.isHost && S.phase !== 'lobby') renderHost();
+  }
+  function renderHostChat() {
+    if (!S || !me.isHost || !$('#hLog')) { closeHostChat(); return; }
+    var r = addMsgs($('#hLog'), S.chatAll || [], hSeen, true);
+    hSeen = r.last; hRead = Math.max(hRead, r.last);
+  }
   function renderMenu() {
     var m = $('#menu');
     if (!m || !S || !S.game || !me.isHost) { closeMenu(); return; }
