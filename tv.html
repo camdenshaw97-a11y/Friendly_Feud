@@ -65,17 +65,17 @@
 
   /* ---- lobby ---- */
   #lobby .head { position: absolute; left: 0; right: 0; top: 40px; text-align: center; }
-  #lobby .join { position: absolute; left: 70px; top: 220px; width: 760px; height: 700px; padding: 40px 50px; box-sizing: border-box; text-align: center; }
+  #lobby .join { position: absolute; left: 70px; top: 220px; width: 760px; height: 700px; padding: 30px 44px; box-sizing: border-box; text-align: center; }
   #lobby .join h3 { font: 400 46px var(--display); color: var(--gold); margin: 0 0 6px; letter-spacing: .04em; }
-  #lobby .join .url { font: 700 50px var(--text); margin: 4px 0 26px; word-break: break-all; }
-  #lobby .code { display: flex; gap: 16px; justify-content: center; margin: 8px 0 28px; }
+  #lobby .join .qrbig { display: block; width: 340px; height: 340px; margin: 8px auto 16px; padding: 14px; box-sizing: border-box; background: #fff; border-radius: 20px; box-shadow: 0 0 0 5px var(--gold), 0 14px 30px #0008; }
+  #lobby .join .or { font: 600 28px var(--text); color: #cfdcff; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #lobby .join .or b { color: #fff; }
+  #lobby .code { display: flex; gap: 14px; justify-content: center; margin: 12px 0 0; }
   #lobby .code span {
-    width: 128px; height: 156px; display: flex; align-items: center; justify-content: center; padding-top: 8px; box-sizing: border-box;
-    font: 400 124px/1 var(--display); color: #fff; background: linear-gradient(#3f7ff2, #1b46c2 55%, #0e2c8d); border-radius: 16px;
+    width: 112px; height: 132px; display: flex; align-items: center; justify-content: center; padding-top: 7px; box-sizing: border-box;
+    font: 400 104px/1 var(--display); color: #fff; background: linear-gradient(#3f7ff2, #1b46c2 55%, #0e2c8d); border-radius: 16px;
     box-shadow: inset 0 0 0 3px #9cc0ff88, 0 8px 0 #071452;
   }
-  #lobby .qr { display: flex; align-items: center; justify-content: center; gap: 30px; text-align: left; font-size: 26px; color: #cfdcff; line-height: 1.35; }
-  #lobby .qr img { width: 190px; height: 190px; background: #fff; border-radius: 14px; padding: 10px; }
   #lobby .teams { position: absolute; left: 890px; top: 220px; width: 960px; height: 546px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
   #lobby .team { padding: 26px 30px; box-sizing: border-box; overflow: hidden; }
   #lobby .team h4 { font: 400 50px/1.1 var(--display); margin: 0 0 14px; text-align: center; color: var(--gold); white-space: nowrap; overflow: hidden; }
@@ -93,8 +93,18 @@
   #roundTag { position: absolute; left: 60px; top: 46px; font: 400 48px var(--display); letter-spacing: .05em; color: var(--gold); text-shadow: 0 3px 0 #000; }
   #roundTag span { font-size: 30px; color: #cfdcff; }
   #roundTag small { display: block; font-size: 30px; color: #fff; letter-spacing: .08em; }
-  #codeTag { position: absolute; right: 60px; top: 46px; text-align: right; font-size: 24px; color: #b9c6f5; line-height: 1.4; }
-  #codeTag b { font: 400 44px var(--display); color: #fff; letter-spacing: .12em; }
+  /* always on screen during a game: scan to join, or to get back in after dropping */
+  #joinTag { position: absolute; right: 40px; top: 20px; display: none; align-items: center; gap: 20px; z-index: 18; }
+  #joinTag.on { display: flex; }
+  #joinTag img { display: block; width: 190px; height: 190px; padding: 10px; box-sizing: border-box; background: #fff; border-radius: 14px; box-shadow: 0 0 0 4px var(--gold), 0 10px 24px #0008; }
+  #joinTag .jt { text-align: right; }
+  #joinTag small { display: block; font: 400 26px/1.2 var(--display); letter-spacing: .1em; color: var(--gold); text-shadow: 0 2px 0 #000; }
+  #joinTag b { display: block; font: 400 70px/1.05 var(--display); letter-spacing: .12em; margin-right: -.12em; color: #fff; text-shadow: 0 3px 0 #000; }
+  #joinTag.fm { right: 18px; top: 286px; flex-direction: column-reverse; gap: 10px; }
+  #joinTag.fm img { width: 154px; height: 154px; padding: 8px; }
+  #joinTag.fm .jt { text-align: center; }
+  #joinTag.fm small { font-size: 18px; }
+  #joinTag.fm b { font-size: 44px; margin-right: 0; padding-left: .12em; }
   .bank { position: absolute; left: 770px; top: 30px; width: 380px; height: 164px; display: flex; align-items: center; justify-content: center; }
   .bank div { font: 400 136px/1 var(--display); padding-top: 12px; letter-spacing: .02em; text-shadow: 0 5px 0 #000; }
   #ansTimer { position: absolute; left: 1196px; top: 38px; width: 150px; height: 150px; border-radius: 50%; display: none; align-items: center; justify-content: center; box-sizing: border-box; padding-top: 8px; font: 400 92px/1 var(--display); background: radial-gradient(circle at 50% 35%, #1a37a0, #050d3d); box-shadow: 0 0 0 5px var(--gold), 0 0 0 10px #6b3d00, 0 0 50px #3b7bf088; }
@@ -199,11 +209,10 @@
   <section class="screen" id="lobby">
     <div class="head"><div class="badge small"><b data-title></b></div></div>
     <div class="join box">
-      <h3>Join on your phone</h3>
-      <div class="url" id="joinUrl"></div>
-      <h3>Room code</h3>
+      <h3>Scan to join</h3>
+      <img class="qrbig" id="qr" alt="QR code to join">
+      <div class="or">or go to <b id="joinUrl"></b> and enter</div>
       <div class="code" id="codeBig"></div>
-      <div class="qr"><img id="qr" alt="QR code to join"><div>Or point your<br>camera here to<br>jump straight in.</div></div>
     </div>
     <div class="teams">
       <div class="team box"><h4 id="l0n"></h4><ul id="l0p"></ul></div>
@@ -218,7 +227,6 @@
 
   <section class="screen" id="game">
     <div id="roundTag" class="disp"></div>
-    <div id="codeTag"></div>
     <div class="bank box"><div id="bank">0</div></div>
     <div id="ansTimer"></div>
     <div class="side left" id="side0"><div class="tname" id="t0n"></div><div class="tscore box"><div id="t0s">0</div></div><div class="xs" id="t0x"></div><div class="roster" id="t0r"></div></div>
@@ -238,6 +246,7 @@
     <div id="fmQ"></div>
   </section>
 
+  <div id="joinTag"><div class="jt"><small>SCAN TO JOIN</small><b id="jtCode"></b></div><img id="jtQr" alt="QR code to join this game"></div>
   <div id="xwrap"></div>
   <div id="banner"><div></div></div>
   <div id="offline">Reconnecting…</div>
@@ -271,6 +280,15 @@
 
   function show(id) {
     document.querySelectorAll('.screen').forEach(function (n) { n.classList.toggle('on', n.id === id); });
+    // The join code stays up for the whole game (the lobby has its own, bigger one).
+    var tag = $('#joinTag'), playing = (id === 'game' || id === 'fm') && !!S;
+    tag.classList.toggle('on', playing);
+    tag.classList.toggle('fm', id === 'fm');
+    if (playing) {
+      var src = '/qr.svg?u=' + encodeURIComponent(location.origin + '/?code=' + S.code);
+      if ($('#jtQr').getAttribute('src') !== src) $('#jtQr').setAttribute('src', src);
+      $('#jtCode').textContent = S.code;
+    }
   }
 
   /* ------------------------------------------------------------ start */
@@ -426,7 +444,6 @@
     var multName = g.mult === 2 ? 'DOUBLE POINTS' : g.mult === 3 ? 'TRIPLE POINTS' : 'SINGLE POINTS';
     if (g.pack && g.pack !== 'General') multName += ' · ' + esc(g.pack.toUpperCase());
     $('#roundTag').innerHTML = (g.sudden ? 'SUDDEN DEATH' : 'ROUND ' + g.round + ' <span>OF ' + g.rounds + '</span>') + '<small>' + multName + '</small>';
-    $('#codeTag').innerHTML = 'Join at ' + esc(location.host) + '<br><b>' + esc(s.code) + '</b>';
 
     // sides
     var active = s.phase === 'play' ? g.playing : s.phase === 'steal' ? g.stealTeam

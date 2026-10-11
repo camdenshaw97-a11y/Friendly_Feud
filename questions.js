@@ -260,6 +260,76 @@ const LATE = [
   ['Name a pickup line people actually use.', ['"Come here often?"', 31], ['"Can I buy you a drink?"', 26], ['"Fall from heaven?"', 16], ['"What\'s your sign?"', 9], ['"Are you a parking ticket?"', 7], ['"Do I know you?"', 6], ['"Nice shoes"', 3], ['"Hey"', 2]]
 ];
 
+const HISTORY = [
+  ['Name a U.S. president everyone knows.', ['George Washington', 31], ['Abraham Lincoln', 27], ['Barack Obama', 10], ['Donald Trump', 9], ['John F. Kennedy', 8], ['Franklin Roosevelt', 6], ['Thomas Jefferson', 5], ['Ronald Reagan', 4]],
+  ["Name something you'd find in a medieval castle.", ['Knights / Armor', 22], ['A throne', 18], ['A moat', 15], ['A drawbridge', 13], ['A dungeon', 11], ['A king or queen', 9], ['Swords', 7], ['Towers', 5]],
+  ['Name an ancient civilization.', ['Egyptians', 30], ['Romans', 26], ['Greeks', 21], ['Mayans', 8], ['Aztecs', 6], ['Chinese', 4], ['Mesopotamians', 3], ['Persians', 2]],
+  ['Name something associated with ancient Egypt.', ['Pyramids', 41], ['Mummies', 21], ['Pharaohs', 12], ['The Nile', 8], ['The Sphinx', 7], ['Hieroglyphics', 5], ['Cleopatra', 4], ['King Tut', 2]],
+  ['Name a famous explorer.', ['Christopher Columbus', 38], ['Lewis and Clark', 16], ['Magellan', 12], ['Marco Polo', 11], ['Neil Armstrong', 8], ['Captain Cook', 6], ['Amelia Earhart', 5], ['Leif Erikson', 4]],
+  ['Name an invention that changed the world.', ['The internet', 22], ['The light bulb', 20], ['The car', 15], ['The telephone', 13], ['The wheel', 10], ['The airplane', 8], ['The printing press', 7], ['The computer', 5]],
+  ['Name a war people learn about in school.', ['World War II', 33], ['The Civil War', 24], ['The Revolutionary War', 17], ['World War I', 12], ['Vietnam', 7], ['The Cold War', 4], ['The War of 1812', 3]],
+  ['Name something people used before cell phones.', ['Landline phone', 31], ['Pay phone', 21], ['Letters', 15], ['Pager', 11], ['Paper maps', 9], ['Phone book', 6], ['Camera', 4], ['Alarm clock', 3]],
+  ['Name a famous king or queen.', ['Queen Elizabeth', 36], ['Henry VIII', 17], ['Cleopatra', 14], ['King Arthur', 10], ['Queen Victoria', 8], ['King Tut', 6], ['King Charles', 5], ['Louis XIV', 4]],
+  ['Name something a cowboy had in the Old West.', ['Horse', 28], ['Hat', 22], ['Revolver', 19], ['Boots', 11], ['Lasso', 9], ['Spurs', 5], ['Bandana', 3], ['Saddle', 3]],
+  ['Name a decade people get nostalgic about.', ['The 80s', 31], ['The 90s', 29], ['The 70s', 15], ['The 60s', 11], ['The 50s', 7], ['The 2000s', 5], ['The 20s', 2]],
+  ['Name something pirates are known for.', ['Treasure', 26], ['Eye patch', 17], ['Parrot', 13], ['Ships', 12], ['Peg leg', 10], ['Saying "Arrr"', 9], ['Swords', 7], ['Skull flag', 6]],
+  ['Name a famous landmark built long ago.', ['The Pyramids', 29], ['Great Wall of China', 22], ['The Colosseum', 15], ['Stonehenge', 12], ['Eiffel Tower', 8], ['Taj Mahal', 6], ['Statue of Liberty', 5], ['The Parthenon', 3]],
+  ['Name something people did for fun before TV.', ['Read', 24], ['Listened to the radio', 21], ['Played cards', 16], ['Danced', 11], ['Played outside', 10], ['Told stories', 8], ['Played music', 6], ['Went to the theater', 4]],
+  ['Name a famous person on U.S. money.', ['George Washington', 34], ['Abraham Lincoln', 24], ['Ben Franklin', 17], ['Alexander Hamilton', 9], ['Andrew Jackson', 8], ['Thomas Jefferson', 4], ['Ulysses Grant', 4]],
+  ["Name something you'd see in a history museum.", ['Dinosaur bones', 24], ['Old weapons', 18], ['Mummies', 15], ['Paintings', 12], ['Old documents', 10], ['Pottery', 8], ['Statues', 7], ['Old clothes', 6]],
+  ['Name a job people had 200 years ago.', ['Farmer', 33], ['Blacksmith', 24], ['Soldier', 10], ['Carpenter', 9], ['Sailor', 8], ['Teacher', 6], ['Miner', 5], ['Doctor', 5]],
+  ['Name a famous ship.', ['Titanic', 51], ['Mayflower', 17], ['Santa Maria', 9], ['Black Pearl', 7], ["Noah's Ark", 5], ['USS Constitution', 5], ['Lusitania', 3], ['Bismarck', 3]],
+  ['Name something that makes you think of ancient Rome.', ['The Colosseum', 27], ['Gladiators', 22], ['Togas', 13], ['Julius Caesar', 12], ['Roman numerals', 9], ['Chariots', 7], ['Roads / Aqueducts', 6], ['Roman gods', 4]],
+  ['Name a famous inventor or scientist.', ['Albert Einstein', 29], ['Thomas Edison', 22], ['Isaac Newton', 13], ['Nikola Tesla', 11], ['Ben Franklin', 9], ['Galileo', 6], ['Marie Curie', 5], ['Alexander Graham Bell', 5]]
+];
+
+const ANIMALS = [
+  ['Name an animal people keep as a pet.', ['Dog', 41], ['Cat', 32], ['Fish', 9], ['Bird', 6], ['Hamster', 5], ['Rabbit', 3], ['Turtle', 2], ['Snake', 2]],
+  ['Name an animal with stripes.', ['Zebra', 46], ['Tiger', 31], ['Skunk', 8], ['Bee', 6], ['Raccoon', 4], ['Chipmunk', 3], ['Clownfish', 2]],
+  ['Name an animal people are scared of.', ['Snake', 27], ['Spider', 24], ['Shark', 17], ['Bear', 11], ['Lion', 7], ['Alligator', 6], ['Wolf', 5], ['Bat', 3]],
+  ['Name an animal that lives in the ocean.', ['Shark', 26], ['Whale', 22], ['Dolphin', 20], ['Octopus', 9], ['Fish', 8], ['Jellyfish', 6], ['Sea turtle', 5], ['Crab', 4]],
+  ["Name an animal you'd see on a farm.", ['Cow', 32], ['Pig', 21], ['Chicken', 18], ['Horse', 13], ['Sheep', 7], ['Goat', 5], ['Duck', 3], ['Donkey', 1]],
+  ["Name an animal that's really fast.", ['Cheetah', 52], ['Horse', 12], ['Rabbit', 9], ['Greyhound', 7], ['Falcon', 6], ['Lion', 5], ['Deer', 5], ['Ostrich', 4]],
+  ["Name something a dog does when it's happy.", ['Wags its tail', 48], ['Jumps', 14], ['Licks you', 13], ['Barks', 9], ['Runs in circles', 7], ['Rolls over', 5], ['Pants', 4]],
+  ['Name an animal that can fly.', ['Bird', 31], ['Eagle', 19], ['Bat', 16], ['Bee', 9], ['Butterfly', 9], ['Owl', 6], ['Parrot', 5], ['Duck', 5]],
+  ['Name something a cat does that drives its owner crazy.', ['Scratches furniture', 30], ['Knocks things off tables', 23], ['Wakes you up early', 13], ['Meows at night', 11], ['Sheds', 8], ['Ignores you', 6], ['Sits on the keyboard', 5], ['Bites', 4]],
+  ['Name an animal with a long tail.', ['Monkey', 28], ['Cat', 16], ['Horse', 13], ['Rat', 12], ['Kangaroo', 10], ['Lizard', 8], ['Dog', 7], ['Peacock', 6]],
+  ['Name an animal found in Africa.', ['Lion', 29], ['Elephant', 25], ['Giraffe', 17], ['Zebra', 12], ['Hippo', 6], ['Rhino', 5], ['Cheetah', 4], ['Gorilla', 2]],
+  ['Name what a baby animal is called.', ['Puppy', 31], ['Kitten', 26], ['Calf', 11], ['Cub', 10], ['Chick', 8], ['Foal', 5], ['Lamb', 5], ['Piglet', 4]],
+  ['Name an animal that sleeps a lot.', ['Bear', 49], ['Sloth', 15], ['Cat', 12], ['Koala', 9], ['Squirrel', 5], ['Bat', 4], ['Groundhog', 4], ['Turtle', 2]],
+  ['Name an animal that makes a loud noise.', ['Lion', 23], ['Dog', 19], ['Rooster', 15], ['Elephant', 13], ['Donkey', 9], ['Monkey', 8], ['Wolf', 7], ['Parrot', 6]],
+  ['Name an animal with a shell.', ['Turtle', 48], ['Snail', 18], ['Crab', 14], ['Clam / Oyster', 8], ['Lobster', 5], ['Armadillo', 4], ['Hermit crab', 3]],
+  ['Name something you need when you get a puppy.', ['Food', 24], ['Leash', 20], ['Bed / Crate', 15], ['Toys', 13], ['Collar', 10], ['Bowls', 8], ['Treats', 6], ['Patience', 4]],
+  ['Name an animal that lives in the jungle.', ['Monkey', 29], ['Tiger', 22], ['Snake', 14], ['Parrot', 10], ['Gorilla', 9], ['Jaguar', 7], ['Elephant', 5], ['Sloth', 4]],
+  ["Name an animal that's black and white.", ['Zebra', 28], ['Panda', 27], ['Penguin', 18], ['Skunk', 11], ['Cow', 7], ['Orca', 5], ['Dalmatian', 4]],
+  ['Name a bug people hate.', ['Mosquito', 28], ['Spider', 21], ['Cockroach', 18], ['Fly', 11], ['Wasp / Bee', 9], ['Ant', 6], ['Tick', 4], ['Bed bug', 3]],
+  ['Name an animal with big ears.', ['Elephant', 44], ['Rabbit', 28], ['Donkey', 8], ['Fox', 6], ['Bat', 5], ['Mouse', 5], ['Dog', 4]]
+];
+
+// Easy ones written for younger players.
+const KIDS = [
+  ['Name something you bring to school.', ['Backpack', 31], ['Lunch', 21], ['Pencils', 16], ['Homework', 10], ['Books', 8], ['Water bottle', 6], ['Notebook', 5], ['Crayons', 3]],
+  ['Name a food kids love.', ['Pizza', 30], ['Chicken nuggets', 19], ['Mac and cheese', 15], ['Ice cream', 12], ['Candy', 9], ['Hot dogs', 6], ['French fries', 5], ['Cookies', 4]],
+  ['Name a color in the rainbow.', ['Red', 26], ['Blue', 22], ['Yellow', 14], ['Green', 13], ['Purple', 11], ['Orange', 10], ['Indigo', 4]],
+  ['Name something kids do at recess.', ['Play tag', 28], ['Swing', 21], ['Play ball', 16], ['Go down the slide', 11], ['Run around', 9], ['Monkey bars', 7], ['Jump rope', 5], ['Talk to friends', 3]],
+  ['Name something you find at a playground.', ['Slide', 31], ['Swings', 29], ['Monkey bars', 13], ['Sandbox', 9], ['Seesaw', 7], ['Climbing wall', 5], ['Merry-go-round', 4], ['Benches', 2]],
+  ['Name a reason a kid gets in trouble.', ['Not listening', 24], ['Fighting with a sibling', 20], ['Lying', 13], ['Messy room', 12], ['Talking back', 10], ['Not doing homework', 9], ['Making a mess', 7], ['Staying up late', 5]],
+  ['Name something you do before bed.', ['Brush your teeth', 37], ['Put on pajamas', 20], ['Read a story', 16], ['Take a bath', 11], ['Say goodnight', 7], ['Get a drink of water', 5], ['Turn on a night-light', 4]],
+  ["Name something you'd see at a birthday party.", ['Cake', 34], ['Balloons', 23], ['Presents', 18], ['Candles', 8], ['Party hats', 6], ['Piñata', 5], ['Games', 4], ['A clown', 2]],
+  ['Name a chore kids have to do.', ['Clean their room', 34], ['Do the dishes', 17], ['Take out the trash', 14], ['Make the bed', 12], ['Feed the pet', 9], ['Set the table', 6], ['Fold laundry', 5], ['Vacuum', 3]],
+  ['Name something kids want for their birthday.', ['Toys', 26], ['Video games', 22], ['Money', 13], ['A bike', 10], ['A phone', 9], ['A puppy', 8], ['LEGO', 7], ['Clothes', 5]],
+  ['Name something scary that could be under the bed.', ['A monster', 54], ['A spider', 14], ['The dark', 9], ['A ghost', 8], ['Dust bunnies', 6], ['A snake', 5], ['Old socks', 4]],
+  ['Name something you do at the beach.', ['Swim', 28], ['Build a sandcastle', 27], ['Find seashells', 13], ['Play in the waves', 11], ['Dig a hole', 8], ['Eat snacks', 6], ['Fly a kite', 4], ['Get sunburned', 3]],
+  ['Name a game you play outside.', ['Tag', 27], ['Hide and seek', 24], ['Soccer', 14], ['Basketball', 11], ['Kickball', 8], ['Catch', 7], ['Hopscotch', 5], ['Jump rope', 4]],
+  ['Name a vegetable.', ['Carrot', 26], ['Broccoli', 22], ['Corn', 14], ['Peas', 10], ['Potato', 9], ['Lettuce', 7], ['Tomato', 7], ['Cucumber', 5]],
+  ["Name something that's hard to share.", ['Toys', 28], ['Candy', 21], ['The tablet', 15], ['The TV remote', 10], ['Dessert', 9], ['The front seat', 7], ['Your room', 6], ['Your friends', 4]],
+  ['Name a job kids want when they grow up.', ['Doctor', 17], ['YouTuber', 16], ['Teacher', 14], ['Firefighter', 13], ['Athlete', 12], ['Police officer', 10], ['Astronaut', 10], ['Vet', 8]],
+  ["Name something to do when it's raining.", ['Watch TV', 25], ['Play video games', 20], ['Play board games', 14], ['Jump in puddles', 12], ['Read', 9], ['Draw or color', 8], ['Build a fort', 7], ['Take a nap', 5]],
+  ['Name something a teacher says a lot.', ['Be quiet', 28], ['Sit down', 19], ['Raise your hand', 17], ['Pay attention', 12], ['Line up', 9], ['Good job', 7], ['Eyes on me', 5], ['No running', 3]],
+  ['Name a treat from the ice cream truck.', ['Ice cream cone', 26], ['Popsicle', 23], ['Ice cream sandwich', 17], ['Snow cone', 12], ['Fudge bar', 8], ['Push-up pop', 6], ['Drumstick', 5], ['Slushie', 3]],
+  ['Name something with wheels you can ride.', ['Bike', 38], ['Scooter', 21], ['Skateboard', 15], ['Roller skates', 9], ['Wagon', 6], ['Car', 5], ['Go-kart', 4], ['Tricycle', 2]]
+];
+
 function build(list, prefix, pack) {
   return list.map((row, i) => ({
     id: prefix + (i + 1),
@@ -278,6 +348,9 @@ const PACKS = [
   { id: 'holidays', name: 'Holidays', blurb: 'Christmas to the Fourth of July.', adult: false, questions: build(HOLIDAYS, 'h', 'holidays') },
   { id: 'food', name: 'Food & Drink', blurb: 'Eating out, snacks and bar orders.', adult: false, questions: build(FOOD, 'd', 'food') },
   { id: 'screen', name: 'Movies, TV & Music', blurb: 'Pop culture.', adult: false, questions: build(SCREEN, 'e', 'screen') },
+  { id: 'history', name: 'History', blurb: 'Kings, wars, inventions and the old days.', adult: false, questions: build(HISTORY, 'y', 'history') },
+  { id: 'animals', name: 'Animals', blurb: 'Pets, zoo animals and bugs.', adult: false, questions: build(ANIMALS, 'a', 'animals') },
+  { id: 'kids', name: 'Kids', blurb: 'Easy ones written for younger players.', adult: false, questions: build(KIDS, 'j', 'kids') },
   { id: 'late', name: 'Late Night', blurb: 'Adults only: dating, drinking, bad decisions.', adult: true, questions: build(LATE, 'n', 'late') }
 ];
 

@@ -44,7 +44,7 @@ const server = http.createServer((req, res) => {
   if (p === '/health') { res.writeHead(200, { 'content-type': 'text/plain' }); return res.end('ok'); }
   if (p === '/qr.svg') {
     const text = (u.searchParams.get('u') || '').slice(0, 300);
-    return QRCode.toString(text || ' ', { type: 'svg', margin: 1, errorCorrectionLevel: 'M' }, (err, svg) => {
+    return QRCode.toString(text || ' ', { type: 'svg', margin: 1, errorCorrectionLevel: 'L' }, (err, svg) => {
       if (err) { res.writeHead(500); return res.end(); }
       res.writeHead(200, { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=3600' });
       res.end(svg);
@@ -128,7 +128,6 @@ function newRoom() {
     settings: { fastMoney: true, useCustom: true, packs: ['general'], answerSecs: 10, rounds: 3 },
     custom: [],
     used: new Set(),      // built-in question ids already seen on this TV
-    usedReset: false,
     chat: [[], []],       // one private log per team
     chatAll: [],          // everyone: both teams and the host
     chatSeq: 0,
@@ -169,19 +168,34 @@ function packPool(room) {
   return BANK.main.filter(q => ids.includes(q.pack));
 }
 
+/*
+ * No repeats. room.used remembers every question this TV has shown, oldest first.
+ * A deck is every available question exactly once: the never-seen ones first (shuffled),
+ * then the already-seen ones starting with whichever was seen longest ago. So nothing
+ * comes back until everything else has had a turn, within a game or across games.
+ */
+const customKey = q => 'q:' + String(q.text).toLowerCase().slice(0, 150);
+const usedKey = q => (q.id[0] === 'c' ? customKey(q) : q.id);
+
+function markUsed(room, key) {
+  room.used.delete(key);              // re-adding moves it to the "most recent" end
+  room.used.add(key);
+  if (room.used.size > 3000) room.used.delete(room.used.values().next().value);
+}
+
+function freshFirst(room, items) {    // items: [{ id, key }]
+  const rank = new Map([...room.used].map((k, i) => [k, i]));
+  const fresh = shuffle(items.filter(x => !rank.has(x.key)));
+  const seen = items.filter(x => rank.has(x.key)).sort((a, b) => rank.get(a.key) - rank.get(b.key));
+  return { fresh, seen };
+}
+
 function buildDeck(room) {
-  const pool = packPool(room);
-  let built = pool.filter(q => !room.used.has(q.id));
-  if (built.length < 8) {            // seen nearly everything: start over
-    for (const q of pool) room.used.delete(q.id);
-    room.usedReset = true;
-    built = pool.slice();
-  }
-  shuffle(built);
-  const custom = room.settings.useCustom
-    ? shuffle(room.custom.map((q, i) => ({ id: 'c' + i, text: q.text, answers: q.answers })))
-    : [];
-  return custom.concat(built).map(q => q.id);
+  const mine = room.settings.useCustom ? room.custom.map((q, i) => ({ id: 'c' + i, key: customKey(q) })) : [];
+  const built = packPool(room).map(q => ({ id: q.id, key: q.id }));
+  const a = freshFirst(room, mine), b = freshFirst(room, built);
+  const seen = freshFirst(room, a.seen.concat(b.seen)).seen;     // oldest first, both kinds together
+  return a.fresh.concat(b.fresh, seen).map(x => x.id);            // the host's own questions lead
 }
 
 function findQuestion(room, id) {
@@ -202,28 +216,21 @@ function answerCount(g) {
 function drawQuestion(room) {
   const g = room.game;
   for (;;) {
-    if (!g.deck.length) g.deck = shuffle(packPool(room).map(q => q.id));
+    if (!g.deck.length) g.deck = buildDeck(room);      // ran through everything: start again, oldest first
     const q = findQuestion(room, g.deck.shift());
     if (q) {
       const copy = JSON.parse(JSON.stringify(q));
-      if (q.id[0] !== 'c') {          // the host's own questions keep every answer
-        room.used.add(q.id);
-        copy.answers = copy.answers.slice(0, answerCount(g));
-      }
+      markUsed(room, usedKey(q));
+      if (q.id[0] !== 'c') copy.answers = copy.answers.slice(0, answerCount(g));   // the host's own questions keep every answer
       return copy;
     }
   }
 }
 
 function drawFast(room) {
-  let pool = BANK.fast.filter(q => !room.used.has(q.id));
-  if (pool.length < 5) {
-    for (const q of BANK.fast) room.used.delete(q.id);
-    room.usedReset = true;
-    pool = BANK.fast.slice();
-  }
-  const five = shuffle(pool).slice(0, 5);
-  for (const q of five) room.used.add(q.id);
+  const parts = freshFirst(room, BANK.fast.map(q => ({ id: q.id, key: q.id })));
+  const five = parts.fresh.concat(parts.seen).slice(0, 5).map(x => BANK.fast.find(q => q.id === x.id));
+  for (const q of five) markUsed(room, q.id);
   return JSON.parse(JSON.stringify(five));
 }
 
@@ -532,7 +539,7 @@ function startAnswerTimer(room) {
 
 /* ----------------------------------------------------------- host action */
 
-const KEEPS_TIMER = new Set(['timer', 'adjust', 'move', 'kick', 'settings', 'custom']);
+const KEEPS_TIMER = new Set(['timer', 'adjust', 'move', 'kick', 'settings', 'custom', 'teamName']);
 
 function hostAction(room, m) {
   const g = room.game;
@@ -557,6 +564,13 @@ function hostAction(room, m) {
       break;
     case 'custom':
       if (!g) room.custom = cleanCustom(m.list);   // only between games
+      break;
+    case 'teamName':                   // the host can rename either team at any time
+      if (m.team === 0 || m.team === 1) {
+        const name = clean(m.name, 18).toUpperCase();
+        room.teams[m.team].name = name;
+        room.teams[m.team].locked = !!name;   // a host-set name sticks; clearing it hands naming back to the team
+      }
       break;
     case 'kick': {
       const p = room.players.get(m.id);
@@ -643,7 +657,7 @@ function publicState(room) {
   const s = {
     code: room.code,
     phase: g ? g.phase : 'lobby',
-    teams: room.teams.map((t, i) => ({ name: teamName(room, i), named: !!t.name, players: t.order.map(pl).filter(Boolean) })),
+    teams: room.teams.map((t, i) => ({ name: teamName(room, i), named: !!t.name, locked: !!t.locked, players: t.order.map(pl).filter(Boolean) })),
     host: room.hostId ? pl(room.hostId) : null,
     loose: [...room.players.values()].filter(p => p.team == null && !p.isHost).map(p => pl(p.id)),
     settings: room.settings,
@@ -733,7 +747,7 @@ function pushAll(room) {
   room.touched = Date.now();
   const pub = publicState(room);
   if (room.displays.size) {
-    const d = JSON.stringify({ t: 'state', s: Object.assign({}, pub, { display: true, used: [...room.used], usedReset: room.usedReset }) });
+    const d = JSON.stringify({ t: 'state', s: Object.assign({}, pub, { display: true, used: [...room.used] }) });
     for (const ws of room.displays) if (ws.readyState === 1) ws.send(d);
   }
   for (const p of room.players.values()) {
@@ -769,7 +783,7 @@ function onMessage(ws, m) {
 
   if (m.t === 'create') {
     const room = newRoom();
-    if (Array.isArray(m.used)) for (const id of m.used.slice(0, 500)) if (typeof id === 'string') room.used.add(id.slice(0, 8));
+    if (Array.isArray(m.used)) for (const id of m.used.slice(-3000)) if (typeof id === 'string' && id) room.used.add(id.slice(0, 160));
     room.custom = cleanCustom(m.custom);
     ws.room = room; ws.display = true; ws.admin = true;
     room.displays.add(ws);
@@ -837,7 +851,7 @@ function onMessage(ws, m) {
       break;
     }
     case 'teamName':
-      if (p.team != null && room.teams[p.team].order[0] === p.id) {
+      if (p.team != null && room.teams[p.team].order[0] === p.id && !room.teams[p.team].locked) {
         room.teams[p.team].name = clean(m.name, 18).toUpperCase();
       }
       break;
