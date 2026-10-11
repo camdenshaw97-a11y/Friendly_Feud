@@ -175,7 +175,49 @@
   .blind { text-align: center; padding: 26px 16px; font-weight: 800; font-size: 18px; line-height: 1.4; }
 
   /* ------------------------------------------------------------ host */
-  #host .wrap { padding-top: 10px; }
+  /* Host game screen: everything fits the visible screen. The top bar, question, prompt,
+     strike button and bottom row keep their size; the answer list flexes to fill what is left. */
+  #host.on { display: flex; flex-direction: column; height: var(--vh, 100dvh); min-height: 0; overflow: hidden; }
+  #host .top { flex: none; padding: 6px 10px; gap: 6px; }
+  #host .top .tm, #host .top .bk { padding-top: 4px; padding-bottom: 3px; }
+  #host .top .tm .s, #host .top .bk b { font-size: 24px; }
+  #host .wrap { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; gap: 7px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); overflow-y: auto; }
+  #host .wrap > * { flex: none; margin-top: 0; margin-bottom: 0; }
+  #host .hq { padding: 8px 12px 9px; border-radius: 12px; }
+  #host .hq small { margin-bottom: 2px; font-size: 10px; }
+  #host .hq b { font-size: 17px; line-height: 1.25; }
+  #host .prompt { padding: 9px 12px; border-radius: 12px; }
+  #host .prompt p { margin-bottom: 7px; font-size: 14px; line-height: 1.35; }
+  #host .prompt p:last-child { margin-bottom: 0; }
+  #host .prompt .row { margin-top: 7px; }
+  #host .btn.big { padding: 16px; font-size: 20px; }
+  #host .btn.sm { padding: 8px; font-size: 13px; }
+  #host .ans { display: flex; flex-direction: column; gap: 4px; flex: 0 1 auto; min-height: 112px; overflow-y: auto; padding-bottom: 3px; }
+  #host .ans button { flex: 1 1 50px; min-height: 30px; max-height: 50px; overflow: hidden; font-size: 15px; border-radius: 10px; padding-left: 10px; gap: 8px; }
+  #host .ans button span { padding: 0; line-height: 1.13; }
+  #host .ans button.open span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #host .ans button b { width: 50px; font-size: 18px; border-radius: 0 10px 10px 0; }
+  /* when the answers are only there to read (nothing to tap yet), they can squeeze tighter */
+  #host .ans.idle button { min-height: 22px; }
+  #host .ans.idle { gap: 3px; }
+  #host .hfoot { gap: 8px; }
+  #host .clock { font-size: 52px; margin: 0; }
+  @media (max-height: 760px) {            /* most phones with the browser bars showing */
+    #host .wrap { gap: 6px; padding-top: 6px; }
+    #host .top .tm .s, #host .top .bk b { font-size: 22px; }
+    #host .hq b { font-size: 16px; }
+    #host .prompt p { font-size: 13.5px; }
+    #host .btn.big { padding: 11px; font-size: 18px; }
+    #host .ans button { box-shadow: 0 2px 0 #0a1f70; }
+  }
+  @media (max-height: 600px) {            /* small phones */
+    #host .top .tm .s, #host .top .bk b { font-size: 20px; }
+    #host .hq { padding: 6px 10px 7px; }
+    #host .hq b { font-size: 15px; }
+    #host .prompt { padding: 7px 10px; }
+    #host .btn.big { padding: 9px; font-size: 17px; }
+    #host .btn.sm { padding: 7px; }
+  }
   .hq { background: #fff; color: #111; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
   .hq small { display: block; font-weight: 800; font-size: 11px; letter-spacing: .08em; color: #4254f4; margin-bottom: 4px; }
   .hq b { font-size: 19px; line-height: 1.3; }
@@ -752,7 +794,7 @@
 
     if (ph === 'question') {
       p = '<p>Face-off: <b>' + esc(names[0]) + '</b> (' + esc(T(0)) + ') vs <b>' + esc(names[1]) + '</b> (' + esc(T(1)) + ').</p>' +
-        '<p>Tap the button as you start reading. That turns their buzzers on. The question stays hidden on every screen until the face-off is won.</p>' +
+        '<p>Tap this as you start reading. Buzzers go live, and the question stays hidden on every screen until the face-off is won.</p>' +
         '<button class="btn gold big" data-a="open">OPEN THE BUZZERS</button>' +
         '<div class="row"><button class="btn ghost sm" data-a="swap">Skip to a different question</button></div>';
     } else if (ph === 'faceoff' && g.fo.buzzed == null) {
@@ -763,7 +805,7 @@
       canTap = true; miss = 'NOT ON THE BOARD ✕';
       var tries = g.fo.tries;
       p = '<p>' + (tries === 0 ? who + ' (' + esc(T(g.fo.turn)) + ') buzzed first.' : tries === 1 ? 'Now ' + who + ' (' + esc(T(g.fo.turn)) + ') gets a chance to beat it.' : 'Still nothing on the board. ' + who + ' (' + esc(T(g.fo.turn)) + ') is next.') +
-        '</p><p>Tap their answer below if it’s there.</p>' +
+        ' Tap their answer if it’s there.</p>' +
         '<div class="row">' + timerBtn + (tries === 0 ? '<button class="btn ghost sm" data-a="clearBuzz">False start: reset</button>' : '') + '</div>';
     } else if (ph === 'passplay') {
       p = '<p><b>' + esc(T(g.fo.winner)) + '</b> won the face-off. Ask them: pass or play?</p>' +
@@ -773,7 +815,7 @@
       p = '<p>Playing: <b>' + esc(T(g.playing)) + '</b>. Ask ' + who + '.<span class="strk xs">' + xs(g.strikes) + '</span></p><div class="row">' + timerBtn + '</div>';
     } else if (ph === 'steal') {
       canTap = true; miss = 'NOT ON THE BOARD ✕';
-      p = '<p>Three strikes! <b>' + esc(T(g.stealTeam)) + '</b> can steal ' + g.bank + ' points with ONE answer. Give them a moment to talk it over in chat.</p><div class="row">' + timerBtn + '</div>';
+      p = '<p>Three strikes! <b>' + esc(T(g.stealTeam)) + '</b> can steal ' + g.bank + ' with ONE answer. Let them talk it over in chat.</p><div class="row">' + timerBtn + '</div>';
     } else if (ph === 'roundEnd') {
       canTap = true;
       var left = hv.answers ? hv.answers.filter(function (a) { return !a.open; }).length : 0;
@@ -795,12 +837,12 @@
     }
     h += '<div class="prompt">' + p + '</div>';
 
-    h += '<div class="ans">';
+    h += '<div class="ans' + (canTap ? '' : ' idle') + '">';
     (hv.answers || []).forEach(function (a, i) {
       h += '<button data-a="reveal" data-i="' + i + '" class="' + (a.open ? 'open' : '') + '"' + (a.open || !canTap ? ' disabled' : '') + '><i>' + (i + 1) + '</i><span>' + esc(a.text) + '</span><b>' + a.pts + '</b></button>';
     });
     h += '</div>';
-    if (miss) h += '<button class="btn red big" data-a="miss" style="margin-bottom:12px">' + miss + '</button>';
+    if (miss) h += '<button class="btn red big" data-a="miss">' + miss + '</button>';
     return h;
   }
 
@@ -821,7 +863,7 @@
       q.answers.forEach(function (a, i) {
         h += '<button data-a="fmPick" data-i="' + i + '"><i></i><span>' + esc(a.text) + (prev === i ? ' (said already)' : '') + '</span><b>' + a.pts + '</b></button>';
       });
-      h += '</div><div class="row" style="margin-bottom:12px"><button class="btn red" data-a="fmPick" data-i="-1">NOT ON THE LIST</button><button class="btn" data-a="fmPass">PASS</button></div>';
+      h += '</div><div class="row"><button class="btn red" data-a="fmPick" data-i="-1">NOT ON THE LIST</button><button class="btn" data-a="fmPass">PASS</button></div>';
     } else {
       var shown = d.shown[fm.turn], all = shown >= 5;
       h += '<div class="prompt"><p><b>FAST MONEY</b> · ' + (fm.stage === 'done' ? (fm.won ? '<b>THEY WON!</b> ' : 'Not this time. ') + fm.total + ' of ' + fm.target + ' points.' : who + '’s answers. Total so far: <b>' + fm.total + '</b>') + '</p>';
