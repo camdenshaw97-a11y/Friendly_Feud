@@ -91,6 +91,7 @@
 
   /* ---- game ---- */
   #roundTag { position: absolute; left: 60px; top: 46px; font: 400 48px var(--display); letter-spacing: .05em; color: var(--gold); text-shadow: 0 3px 0 #000; }
+  #roundTag span { font-size: 30px; color: #cfdcff; }
   #roundTag small { display: block; font-size: 30px; color: #fff; letter-spacing: .08em; }
   #codeTag { position: absolute; right: 60px; top: 46px; text-align: right; font-size: 24px; color: #b9c6f5; line-height: 1.4; }
   #codeTag b { font: 400 44px var(--display); color: #fff; letter-spacing: .12em; }
@@ -424,7 +425,7 @@
     // round tag
     var multName = g.mult === 2 ? 'DOUBLE POINTS' : g.mult === 3 ? 'TRIPLE POINTS' : 'SINGLE POINTS';
     if (g.pack && g.pack !== 'General') multName += ' · ' + esc(g.pack.toUpperCase());
-    $('#roundTag').innerHTML = (g.sudden ? 'SUDDEN DEATH' : 'ROUND ' + g.round) + '<small>' + multName + '</small>';
+    $('#roundTag').innerHTML = (g.sudden ? 'SUDDEN DEATH' : 'ROUND ' + g.round + ' <span>OF ' + g.rounds + '</span>') + '<small>' + multName + '</small>';
     $('#codeTag').innerHTML = 'Join at ' + esc(location.host) + '<br><b>' + esc(s.code) + '</b>';
 
     // sides

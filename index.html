@@ -155,6 +155,10 @@
   .seg { display: flex; flex: none; border-radius: 10px; overflow: hidden; box-shadow: inset 0 0 0 2px #3a4da8; }
   .seg button { border: 0; background: transparent; color: #cfdcff; font: 800 14px var(--text); padding: 9px 11px; }
   .seg button.on { background: var(--gold); color: #231700; }
+  .step { display: flex; flex: none; align-items: center; gap: 4px; }
+  .step button { width: 40px; height: 38px; border: 0; border-radius: 10px; background: #2a45c9; color: #fff; font: 800 20px var(--text); }
+  .step button:disabled { opacity: .35; }
+  .step b { min-width: 34px; text-align: center; font: 400 26px var(--display); }
   /* fast money on phones */
   #pFm { display: none; }
   #play.fm #pFm { display: block; }
@@ -426,7 +430,7 @@
   function topBar(act) {
     var g = S.game;
     var isFm = S.phase === 'fm' && g.fm;
-    var label = isFm ? 'FAST MONEY' : g.sudden ? 'SUDDEN DEATH ×3' : 'ROUND ' + g.round + (g.mult > 1 ? ' ×' + g.mult : '');
+    var label = isFm ? 'FAST MONEY' : g.sudden ? 'SUDDEN DEATH ×3' : 'ROUND ' + g.round + '/' + g.rounds + (g.mult > 1 ? ' ×' + g.mult : '');
     function tm(t) {
       return '<div class="tm' + (act === t ? ' act' : '') + (me.team === t ? ' my' : '') + '"><div class="n">' + esc(T(t)) + '</div><b class="s">' + g.scores[t] + '</b></div>';
     }
@@ -476,11 +480,14 @@
     if (me.isHost) {
       var st = S.settings, n = S.customCount, saved = F.savedQuestions().length;
       h += '<div class="card"><h3><span>Game settings</span></h3>' +
-        '<div class="toggle"><div>Fast Money finale<small>The winning team plays for 200 points after round 3.</small></div><button class="sw' + (st.fastMoney ? ' on' : '') + '" data-a="set" data-k="fastMoney"></button></div>' +
+        '<div class="toggle"><div>Fast Money finale<small>The winning team plays for 200 points after the last round.</small></div><button class="sw' + (st.fastMoney ? ' on' : '') + '" data-a="set" data-k="fastMoney"></button></div>' +
         '<div class="toggle"><div>Use my own questions first<small>' + (n ? n + ' loaded. Built-in questions fill the rest.' : 'None loaded yet. Built-in questions will be used.') + '</small></div><button class="sw' + (st.useCustom && n ? ' on' : '') + '" data-a="set" data-k="useCustom"' + (n ? '' : ' disabled') + '></button></div>' +
         '<div class="row" style="margin-top:8px"><button class="btn ghost sm" data-a="editor">Write questions</button>' +
         (saved && !n ? '<button class="btn ghost sm" data-a="loadSaved">Load my ' + saved + ' saved</button>' : '') + '</div>' +
-        '<div class="toggle" style="margin-top:6px"><div>Answer timer<small>Optional. Tap it during a turn to hurry someone along.</small></div><div class="seg">' +
+        '<div class="toggle" style="margin-top:6px"><div>Rounds<small>' + roundPlan(st.rounds) + '</small></div><div class="step">' +
+        '<button data-a="rounds" data-d="-1"' + (st.rounds <= 1 ? ' disabled' : '') + '>−</button><b>' + st.rounds + '</b>' +
+        '<button data-a="rounds" data-d="1"' + (st.rounds >= S.maxRounds ? ' disabled' : '') + '>+</button></div></div>' +
+        '<div class="toggle"><div>Answer timer<small>Optional. Tap it during a turn to hurry someone along.</small></div><div class="seg">' +
         [5, 10, 15, 20].map(function (v) { return '<button data-a="secs" data-v="' + v + '" class="' + (st.answerSecs === v ? 'on' : '') + '">' + v + 's</button>'; }).join('') + '</div></div></div>';
       h += '<div class="card"><h3><span>Question packs</span><small>' + st.packs.length + ' ON</small></h3>';
       S.packs.forEach(function (pk) {
@@ -531,12 +538,20 @@
     else if (a === 'loadSaved') H('custom', { list: F.savedQuestions() });
     else if (a === 'editor') openEditor();
     else if (a === 'secs') H('settings', { answerSecs: Number(b.dataset.v) });
+    else if (a === 'rounds') H('settings', { rounds: S.settings.rounds + Number(b.dataset.d) });
     else if (a === 'pack') {
       var list = S.settings.packs.slice(), at = list.indexOf(b.dataset.id);
       if (at >= 0) list.splice(at, 1); else list.push(b.dataset.id);
       if (!list.length) toast('Keep at least one pack on.'); else H('settings', { packs: list });
     }
   });
+  // "Single, double, triple, single, double" for the lobby
+  function roundPlan(n) {
+    var names = ['single', 'double', 'triple'], out = [];
+    for (var i = 0; i < Math.min(n, 6); i++) out.push(names[i % 3]);
+    var text = out.join(', ') + (n > 6 ? ', and so on' : '');
+    return text.charAt(0).toUpperCase() + text.slice(1) + ' points.';
+  }
   function openEditor() {
     editorOpen = true;
     F.openEditor({
@@ -730,7 +745,7 @@
     var ph = S.phase, h = '';
     var mult = (g.mult === 2 ? ' · DOUBLE' : g.mult === 3 ? ' · TRIPLE' : '') + (g.pack && g.pack !== 'General' ? ' · ' + esc(g.pack.toUpperCase()) : '');
     var timerBtn = '<button class="btn ghost sm" data-a="timer">' + (g.timer ? 'Stop timer · <span data-timer></span>' : '⏱ Start ' + S.settings.answerSecs + 's timer') + '</button>';
-    h += '<div class="hq"><small>' + (g.sudden ? 'SUDDEN DEATH' : 'ROUND ' + g.round) + mult + (ph === 'question' || ph === 'faceoff' ? ' · READ THIS OUT LOUD' : '') + '</small><b>' + esc(hv.question || '') + '</b></div>';
+    h += '<div class="hq"><small>' + (g.sudden ? 'SUDDEN DEATH' : 'ROUND ' + g.round + ' OF ' + g.rounds) + mult + (ph === 'question' || ph === 'faceoff' ? ' · READ THIS OUT LOUD' : '') + '</small><b>' + esc(hv.question || '') + '</b></div>';
     var names = g.fo.pids.map(function (id, t) { var p = S.teams[t].players.filter(function (x) { return x.id === id; })[0]; return p ? p.name : '?'; });
     var who = g.answerer ? '<b>' + esc(g.answerer.name) + '</b>' : '';
     var canTap = false, miss = null, p = '';
@@ -762,7 +777,7 @@
     } else if (ph === 'roundEnd') {
       canTap = true;
       var left = hv.answers ? hv.answers.filter(function (a) { return !a.open; }).length : 0;
-      var last = (g.round >= 3 || g.sudden);
+      var last = (g.round >= g.rounds || g.sudden);
       p = '<p>' + (g.stolen ? 'Stolen! ' : '') + '<b>' + g.awarded + '</b> points to <b>' + esc(T(g.roundWinner)) + '</b>.</p>' +
         (left ? '<p>Tap the answers nobody got to reveal them on the TV.</p>' : '') +
         '<button class="btn gold big" data-a="next">' + (!last ? 'START ROUND ' + (g.round + 1) : g.scores[0] === g.scores[1] ? 'TIED! SUDDEN DEATH' : 'SHOW THE WINNER') + '</button>';

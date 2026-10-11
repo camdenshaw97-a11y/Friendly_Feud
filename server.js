@@ -30,6 +30,7 @@ const MIME = {
 const FM_TARGET = 200;
 const FM_SECONDS = [20, 25];
 const MAX_PLAYERS = 40;
+const MAX_ROUNDS = 15;
 const ROOM_IDLE_MS = 6 * 60 * 60 * 1000;
 
 const rooms = new Map();
@@ -124,7 +125,7 @@ function newRoom() {
     players: new Map(),
     teams: [{ name: '', order: [] }, { name: '', order: [] }],
     hostId: null,
-    settings: { fastMoney: true, useCustom: true, packs: ['general'], answerSecs: 10 },
+    settings: { fastMoney: true, useCustom: true, packs: ['general'], answerSecs: 10, rounds: 3 },
     custom: [],
     used: new Set(),      // built-in question ids already seen on this TV
     usedReset: false,
@@ -190,10 +191,10 @@ function findQuestion(room, id) {
   return BANK.main.find(q => q.id === id) || null;
 }
 
-// Like the show, the board gets shorter as the points go up.
+// Like the show, the board gets shorter as the points go up (keyed by single/double/triple).
 const ANSWER_RANGE = { 1: [6, 8], 2: [5, 7], 3: [4, 6] };
 function answerCount(g) {
-  const [lo, hi] = g.sudden ? [4, 5] : (ANSWER_RANGE[g.round] || [4, 6]);
+  const [lo, hi] = g.sudden ? [4, 5] : (ANSWER_RANGE[g.mult] || [4, 6]);
   return lo + crypto.randomInt(hi - lo + 1);
 }
 
@@ -236,6 +237,7 @@ function startGame(room) {
   room.history = [];
   room.game = {
     phase: 'question', round: 1, mult: 1, sudden: false,
+    rounds: room.settings.rounds,       // fixed for this game once it starts
     scores: [0, 0], deck: [], winner: null, fm: null
   };
   room.game.deck = buildDeck(room);
@@ -386,9 +388,9 @@ function doNext(room) {
   const g = room.game;
   if (!g || g.phase !== 'roundEnd') return;
   snapshot(room);
-  if (g.round < 3 && !g.sudden) {
+  if (g.round < g.rounds && !g.sudden) {
     g.round++;
-    g.mult = g.round;
+    g.mult = ((g.round - 1) % 3) + 1;   // single, double, triple, then back to single
     loadQuestion(room);
   } else if (g.scores[0] === g.scores[1]) {
     g.sudden = true;
@@ -544,6 +546,7 @@ function hostAction(room, m) {
       if (typeof m.fastMoney === 'boolean') room.settings.fastMoney = m.fastMoney;
       if (typeof m.useCustom === 'boolean') room.settings.useCustom = m.useCustom;
       if ([5, 10, 15, 20].includes(m.answerSecs)) room.settings.answerSecs = m.answerSecs;
+      if (Number.isInteger(m.rounds) && m.rounds >= 1 && m.rounds <= MAX_ROUNDS && !g) room.settings.rounds = m.rounds;
       if (Array.isArray(m.packs) && !g) {
         room.settings.packs = BANK.packs.map(p => p.id).filter(id => m.packs.includes(id));
       }
@@ -641,6 +644,7 @@ function publicState(room) {
     loose: [...room.players.values()].filter(p => p.team == null && !p.isHost).map(p => pl(p.id)),
     settings: room.settings,
     packs: BANK.packs.map(p => ({ id: p.id, name: p.name, blurb: p.blurb, adult: p.adult, count: p.questions.length })),
+    maxRounds: MAX_ROUNDS,
     customCount: room.custom.length,
     fx: room.fx,
     game: null
@@ -649,7 +653,7 @@ function publicState(room) {
     const fo = g.fo;
     const ans = currentAnswerer(room);
     s.game = {
-      round: g.round, mult: g.mult, sudden: g.sudden,
+      round: g.round, rounds: g.rounds, mult: g.mult, sudden: g.sudden,
       scores: g.scores, bank: g.bank, strikes: g.strikes,
       // Hidden until the face-off is settled, so nobody can buzz early and then read it.
       question: (g.phase === 'question' || g.phase === 'faceoff') ? null : g.q.text,
