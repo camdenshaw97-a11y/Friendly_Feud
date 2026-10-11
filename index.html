@@ -656,7 +656,7 @@
   }
 
   /* ---- chat: a private team channel and an everyone channel ---- */
-  var chan = 'team', chatFor = null, chatFresh = true;
+  var chan = 'team', chatFor = null, chatFresh = true, chatEpoch = null;
   var seen = { team: 0, all: 0 }, unread = { team: false, all: false };
   function addMsgs(log, msgs, last, showTeam) {
     var near = log.scrollHeight - log.scrollTop - log.clientHeight < 60, added = false, others = false;
@@ -696,8 +696,8 @@
       : 'PRIVATE · ONLY ' + T(me.team) + ' CAN SEE THIS';
   }
   function renderChat() {
-    if (chatFor !== me.team) {
-      chatFor = me.team; chatFresh = true; seen = { team: 0, all: 0 }; unread = { team: false, all: false };
+    if (chatFor !== me.team || chatEpoch !== S.chatEpoch) {       // new team, or a new game wiped the chats
+      chatFor = me.team; chatEpoch = S.chatEpoch; chatFresh = true; seen = { team: 0, all: 0 }; unread = { team: false, all: false };
       $('#logTeam').innerHTML = '<div class="hint">Whisper here instead of out loud, so the other team can’t hear your answers.</div>';
       $('#logAll').innerHTML = '<div class="hint">Both teams and the host can read this. Trash talk goes here, answers don’t.</div>';
       setChan('team');
@@ -927,7 +927,7 @@
   function closeMenu() { menuOpen = false; var m = $('#menu'); if (m) m.remove(); }
 
   /* ---- host's view of the everyone chat ---- */
-  var hostChatOpen = false, hRead = 0, hSeen = 0;
+  var hostChatOpen = false, hRead = 0, hSeen = 0, hEpoch = null;
   function hostUnread() {
     return (S.chatAll || []).filter(function (c) { return c.id > hRead && c.from !== me.id; }).length;
   }
@@ -954,6 +954,10 @@
   }
   function renderHostChat() {
     if (!S || !me.isHost || !$('#hLog')) { closeHostChat(); return; }
+    if (hEpoch !== S.chatEpoch) {                                  // a new game wiped the chat
+      if (hEpoch !== null) { $('#hLog').innerHTML = '<div class="hint">Nothing yet. Say hi to both teams.</div>'; hSeen = 0; }
+      hEpoch = S.chatEpoch;
+    }
     var r = addMsgs($('#hLog'), S.chatAll || [], hSeen, true);
     hSeen = r.last; hRead = Math.max(hRead, r.last);
   }

@@ -132,6 +132,7 @@ function newRoom() {
     chat: [[], []],       // one private log per team
     chatAll: [],          // everyone: both teams and the host
     chatSeq: 0,
+    chatEpoch: 0,         // goes up each time the chats are wiped, so phones clear theirs too
     answerTimer: null,    // optional countdown the host can start
     game: null,
     history: [],
@@ -235,6 +236,9 @@ function snapshot(room) {
 
 function startGame(room) {
   room.history = [];
+  room.chat = [[], []];               // every new game starts with empty chats
+  room.chatAll = [];
+  room.chatEpoch++;
   room.game = {
     phase: 'question', round: 1, mult: 1, sudden: false,
     rounds: room.settings.rounds,       // fixed for this game once it starts
@@ -646,6 +650,7 @@ function publicState(room) {
     packs: BANK.packs.map(p => ({ id: p.id, name: p.name, blurb: p.blurb, adult: p.adult, count: p.questions.length })),
     maxRounds: MAX_ROUNDS,
     customCount: room.custom.length,
+    chatEpoch: room.chatEpoch,
     fx: room.fx,
     game: null
   };
