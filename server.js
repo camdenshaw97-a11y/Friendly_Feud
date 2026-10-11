@@ -14,7 +14,13 @@ const QRCode = require('qrcode');
 const BANK = require('./questions');
 
 const PORT = process.env.PORT || 3000;
-const PUB = path.join(__dirname, 'public');
+// The pages normally live in a "public" folder. If they were uploaded loose,
+// next to this file, serve them from here instead, but only the page files,
+// so the questions and server code are never handed to a browser.
+const PUB_DIR = path.join(__dirname, 'public');
+const FLAT = !fs.existsSync(path.join(PUB_DIR, 'index.html'));
+const PUB = FLAT ? __dirname : PUB_DIR;
+const PAGE_FILES = new Set(['index.html', 'tv.html', 'common.js', 'editor.js', 'style.css', 'anton.woff2']);
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png',
@@ -47,6 +53,7 @@ const server = http.createServer((req, res) => {
   if (p === '/tv') p = '/tv.html';
   const file = path.normalize(path.join(PUB, p));
   if (!file.startsWith(PUB + path.sep)) { res.writeHead(403); return res.end(); }
+  if (FLAT && !PAGE_FILES.has(path.relative(PUB, file))) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('Not found'); }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('Not found'); }
     const ext = path.extname(file);
