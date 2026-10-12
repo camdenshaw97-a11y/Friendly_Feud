@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Friend Feud: Christmas game night?</title>
+<meta name="description" content="A 70-second look at Friend Feud. All it takes is a TV and everybody’s phone.">
+<meta property="og:type" content="video.other">
+<meta property="og:site_name" content="Friend Feud">
+<meta property="og:title" content="Friend Feud: Christmas game night?">
+<meta property="og:description" content="A 70-second look at the game. All it takes is a TV and everybody’s phone.">
+<meta property="og:url" content="{{HERE}}">
+<meta property="og:image" content="{{HERE}}/poster.jpg">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="720">
+<meta property="og:video" content="{{HERE}}/video.mp4">
+<meta property="og:video:type" content="video/mp4">
+<meta property="og:video:width" content="1920">
+<meta property="og:video:height" content="1080">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#050b33">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231740b8'/%3E%3Cellipse cx='32' cy='32' rx='24' ry='16' fill='%23071452' stroke='%23f7c948' stroke-width='4'/%3E%3Cpath d='M24 24l16 16M40 24L24 40' stroke='%23e0211b' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  @font-face { font-family: 'Anton'; src: url('/anton.woff2') format('woff2'); font-display: swap; }
+  :root { --gold: #f7c948; --display: 'Anton', 'Impact', 'Haettenschweiler', 'Arial Narrow Bold', sans-serif; --text: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  * { box-sizing: border-box; }
+  html { background: #02041a; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: var(--text); color: #fff;
+    display: flex; flex-direction: column; align-items: center;
+    padding: max(22px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+    overflow-x: hidden;
+  }
+  body::after {                        /* the backdrop stays put while the page scrolls */
+    content: ""; position: fixed; inset: 0; z-index: -2;
+    background: radial-gradient(ellipse at 50% 30%, #1b3fae 0%, #0b1f78 34%, #050c3c 68%, #02041a 100%);
+  }
+  body::before {                       /* the same slow sunburst as the scoreboard */
+    content: ""; position: fixed; left: 50%; top: 34%; width: 240vmax; height: 240vmax; margin: -120vmax 0 0 -120vmax; z-index: -1;
+    background: repeating-conic-gradient(from 0deg, #ffffff0a 0 5deg, transparent 5deg 10deg);
+    animation: spin 160s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; } }
+
+  .badge {
+    display: inline-block; margin: 10px 0 clamp(20px, 4.5vw, 34px); padding: .2em .78em .16em; border-radius: 50%;
+    font: 400 clamp(34px, 8.6vw, 62px)/1 var(--display); letter-spacing: .03em; white-space: nowrap;
+    background: radial-gradient(ellipse at 50% 30%, #3f7ff2, #1437a8 60%, #0a1f70);
+    box-shadow: 0 0 0 .075em var(--gold), 0 0 0 .15em #8a5200, 0 0 .7em #3b7bf0aa;
+    text-shadow: 0 .05em 0 #071452; transform: rotate(-3deg);
+    animation: rise .5s ease-out backwards;
+  }
+  .frame {
+    width: min(100%, 1040px, max(480px, calc((100vh - 350px) * 16 / 9))); border-radius: clamp(10px, 2vw, 18px); overflow: hidden; background: #000; line-height: 0;
+    box-shadow: 0 0 0 4px var(--gold), 0 0 0 8px #6b3d00, 0 18px 44px #000a;
+    animation: rise .5s .1s ease-out backwards;
+  }
+  video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000 center / cover no-repeat; }
+  h1 {
+    margin: clamp(24px, 5vw, 40px) 0 0; text-align: center; font: 400 clamp(30px, 7.4vw, 60px)/1.05 var(--display);
+    letter-spacing: .03em; color: var(--gold); text-shadow: 0 .05em 0 #5a3400, 0 .12em .5em #000a;
+    animation: rise .5s .2s ease-out backwards;
+  }
+  p { margin: 12px 0 0; text-align: center; font-size: clamp(16px, 3.6vw, 21px); line-height: 1.4; color: #d5deff; max-width: 34em; animation: rise .5s .28s ease-out backwards; }
+  small { display: block; margin-top: clamp(26px, 6vw, 44px); text-align: center; font-size: 12px; line-height: 1.5; color: #8e9fe0; animation: rise .5s .36s ease-out backwards; }
+</style>
+</head>
+<body>
+  <span class="badge">FRIEND FEUD</span>
+  <div class="frame">
+    <video controls playsinline preload="metadata" poster="{{PATH}}/poster.jpg">
+      <source src="{{PATH}}/video.mp4" type="video/mp4">
+      Your browser can’t play this video here. <a href="{{PATH}}/video.mp4">Open the video file</a> instead.
+    </video>
+  </div>
+  <h1>CHRISTMAS GAME NIGHT?</h1>
+  <p>All it takes is a TV and everybody’s phone. Turn the sound on: it’s about a minute long.</p>
+  <small>Music: “Private Eye” by Kevin MacLeod (incompetech.com)<br>Licensed under Creative Commons: By Attribution 3.0</small>
+</body>
+</html>

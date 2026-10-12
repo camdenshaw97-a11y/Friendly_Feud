@@ -28,6 +28,11 @@ const MIME = {
   '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.json': 'application/json', '.mp3': 'audio/mpeg'
 };
 
+// The walkthrough video has a page of its own. Nothing in the game links to it, and its files
+// (promo.html, promo.mp4, promo.jpg) are only ever served under this address.
+const PROMO_PATH = '/video-ph672bhw2q';
+const PROMO = { '': ['promo.html', 'text/html; charset=utf-8'], '/video.mp4': ['promo.mp4', 'video/mp4'], '/poster.jpg': ['promo.jpg', 'image/jpeg'] };
+
 // A fingerprint of the pages as they are right now. Every page is told which build it is, and can
 // ask for the current one, so a screen left open across an update reloads itself.
 const BUILD = (() => {
@@ -65,6 +70,8 @@ const server = http.createServer((req, res) => {
       res.end(svg);
     });
   }
+  if (p === PROMO_PATH || p.startsWith(PROMO_PATH + '/')) return sendPromo(req, res, p.slice(PROMO_PATH.length).replace(/\/$/, ''));
+  if (/^\/promo\./.test(p)) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('Not found'); }
   if (p === '/') p = '/index.html';
   if (p === '/tv') p = '/tv.html';
   const file = path.normalize(path.join(PUB, p));
@@ -81,6 +88,45 @@ const server = http.createServer((req, res) => {
     res.end(data);
   });
 });
+
+// The video page and its two files. The video is sent in whatever pieces the browser asks for
+// ("Range" requests): iPhones will not play a video from a server that can't do that.
+function sendPromo(req, res, sub) {
+  const entry = PROMO[sub];
+  const gone = () => { res.writeHead(404, { 'content-type': 'text/plain' }); res.end('Not found'); };
+  if (!entry || (req.method !== 'GET' && req.method !== 'HEAD')) return gone();
+  const file = path.join(PUB, entry[0]), type = entry[1];
+  const head = { 'content-type': type, 'x-robots-tag': 'noindex, nofollow' };
+  if (sub === '') {
+    return fs.readFile(file, 'utf8', (err, html) => {
+      if (err) return gone();
+      // link previews (texts, email) need full addresses for the picture and the video
+      const host = /^[a-z0-9.:-]+$/i.test(req.headers.host || '') ? req.headers.host : 'localhost';
+      const proto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim() === 'https' ? 'https' : 'http';
+      const body = Buffer.from(html.split('{{HERE}}').join(proto + '://' + host + PROMO_PATH).split('{{PATH}}').join(PROMO_PATH));
+      res.writeHead(200, Object.assign(head, { 'cache-control': 'no-cache', 'content-length': body.length }));
+      res.end(req.method === 'HEAD' ? undefined : body);
+    });
+  }
+  fs.stat(file, (err, st) => {
+    if (err || !st.isFile()) return gone();
+    let start = 0, end = st.size - 1, code = 200;
+    const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+    if (m && (m[1] || m[2])) {
+      if (m[1] === '') start = Math.max(0, st.size - Number(m[2]));          // "the last N bytes"
+      else { start = Number(m[1]); if (m[2]) end = Math.min(end, Number(m[2])); }
+      if (start > end || start >= st.size) { res.writeHead(416, { 'content-range': 'bytes */' + st.size }); return res.end(); }
+      code = 206;
+      head['content-range'] = 'bytes ' + start + '-' + end + '/' + st.size;
+    }
+    res.writeHead(code, Object.assign(head, { 'content-length': end - start + 1, 'accept-ranges': 'bytes', 'cache-control': 'public, max-age=86400' }));
+    if (req.method === 'HEAD') return res.end();
+    const stream = fs.createReadStream(file, { start, end });
+    stream.on('error', () => res.destroy());
+    res.on('close', () => stream.destroy());                                 // viewer left or skipped ahead
+    stream.pipe(res);
+  });
+}
 
 /* --------------------------------------------------------------- helpers */
 

@@ -8,7 +8,20 @@ Times are Pacific. The code in brackets is the GitHub commit for that change: on
 **Commits** and click it to see exactly which lines changed, or to get the game back to how it
 was at that point.
 
-## 1.7 · October 12, 2026, 10:25 am
+## 1.7.1 · October 12, 2026, 12:35 pm
+
+**A private page for the walkthrough video**
+- The 70-second walkthrough video (a holiday game played start to finish, with captions) now lives
+  on the site, on a page of its own. Send someone the link and they can watch it in their browser:
+  nothing to download, and it plays on phones.
+- **The page is unlisted.** Nothing in the game links to it, the address ends in a random code,
+  and it asks search engines not to list it. Pasting the link into a text or an email shows a
+  preview picture with the game's name.
+- Behind the scenes, the server learned to send a video in pieces as the viewer watches or skips
+  around. iPhones won't play a video from a site that can't do that.
+- The game itself is unchanged.
+
+## 1.7 · October 12, 2026, 10:25 am  [56be504]
 
 **Keyboard buzzers**
 - New switch in the host's lobby, under Game settings: **Keyboard buzzers**. It is off until you
