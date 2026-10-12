@@ -135,6 +135,19 @@
   .sw:active:not(:disabled)::after, .sw[data-fx-press]:not(:disabled)::after { width: 30px; }      /* the knob stretches under a thumb */
   .sw.on:active:not(:disabled)::after, .sw.on[data-fx-press]:not(:disabled)::after { transform: translateX(16px); }
   .sw:disabled { opacity: .45; }
+  /* keyboard buzzers: one row per team with its key cap and a Change button */
+  .keys { display: grid; gap: 6px; margin: 2px 0 6px; animation: riseIn .28s ease-out; }
+  .keyrow { display: flex; align-items: center; gap: 10px; background: #0a1445; border-radius: 12px; padding: 7px 8px 7px 12px; box-shadow: inset 0 0 0 2px transparent; transition: box-shadow .25s; }
+  .keyrow.ask { box-shadow: inset 0 0 0 2px var(--gold); }
+  .keyrow > span { flex: 1; min-width: 0; font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .keyrow .btn { flex: none; width: 84px; padding: 9px 0; }
+  kbd { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 34px; box-sizing: border-box; padding: 3px 9px 0; border-radius: 8px;
+    font: 400 19px/1 var(--display); letter-spacing: .03em; white-space: nowrap; color: #111; background: linear-gradient(#fff, #d5dcf5); box-shadow: 0 3px 0 #7f8bb8; animation: popIn .3s cubic-bezier(.3, 1.6, .5, 1); }
+  .keyrow.ask kbd { color: #231700; background: linear-gradient(#ffe27a, #f2b01e); box-shadow: 0 3px 0 #8a5200; animation: keyWait 1s ease-in-out infinite; }
+  @keyframes keyWait { 50% { opacity: .45; } }
+  .keys p { margin: 2px 4px 0; font-size: 13px; line-height: 1.4; color: #9fb0ee; }
+  .keys p.ask { color: var(--gold); font-weight: 700; }
+  p kbd { min-width: 0; height: 22px; padding: 2px 6px 0; font-size: 14px; border-radius: 6px; box-shadow: 0 2px 0 #7f8bb8; vertical-align: 1px; animation: none; }
   a.link { transition: color .15s, opacity .15s; }
   a.link:active, a.link[data-fx-press] { color: #fff; }
   a.link { display: block; text-align: center; color: #9fb0ee; font-size: 14px; font-weight: 700; margin-top: 16px; text-decoration: underline; }
@@ -664,6 +677,11 @@
     if (!me.isHost && me.team != null && S.game) bigMoments(has);
     if (has.fmDup && me.isHost) { toast('Already said by player one. Ask for another answer!'); buzzPhone(200); }
     if (has.timeUp) { toast(me.isHost ? 'Time’s up. Your call: strike, or let it slide.' : 'Time’s up!'); buzzPhone([150, 80, 150]); }
+    if (me.isHost) {                    // choosing a team's keyboard buzzer key
+      if (has.keySet) toast(T(has.keySet.team) + ' now buzz with ' + has.keySet.label);
+      else if (has.keyDup) { toast(has.keyDup.label + ' is already ' + T(1 - has.keyDup.team) + '’s key. Press a different one.'); buzzPhone(200); }
+      else if (has.keyCancel) toast('No key was pressed, so nothing changed.');
+    }
     timerEnd = (S.game && S.game.timer) ? performance.now() + S.game.timer.left : null;
 
     if (me.isHost && S.phase !== 'lobby') { show('host'); renderHost(); }
@@ -730,6 +748,52 @@
   }
   function xs(n) { return [0, 1, 2].map(function (k) { return '<i class="' + (k < n ? 'hit' : '') + '"></i>'; }).join(''); }
 
+  /* ---- keyboard buzzers: the same switch and key rows in the lobby and in the host menu ---- */
+  function keysBlock() {
+    var ks = S.settings.keys;
+    if (!ks) return '';
+    var h = '<div class="toggle" data-key="keysOn"><div>Keyboard buzzers<small>Each team gets a key on the TV computer’s keyboard. Phone buzzers keep working.</small></div>' +
+      '<button class="sw' + (ks.on ? ' on' : '') + '" data-a="set" data-k="keysOn" aria-label="Keyboard buzzers"></button></div>';
+    if (!ks.on) return h;
+    h += '<div class="keys" data-key="keys">';
+    [0, 1].forEach(function (t) {
+      var ask = S.keyAsk === t;
+      h += '<div class="keyrow' + (ask ? ' ask' : '') + '" data-key="kr' + t + '"><span>' + esc(T(t)) + '</span>' +
+        '<kbd data-key="k' + (ask ? '?' : esc(ks.labels[t])) + '">' + (ask ? '?' : esc(ks.labels[t])) + '</kbd>' +
+        '<button class="btn ghost sm" data-a="keySet" data-team="' + (ask ? '' : t) + '">' + (ask ? 'Cancel' : 'Change') + '</button></div>';
+    });
+    h += S.keyAsk != null
+      ? '<p class="ask" data-key="kn1">Now press the new key for ' + esc(T(S.keyAsk)) + ' on the TV computer’s keyboard.</p>'
+      : '<p data-key="kn0">A key buzzes for whoever is up in the face-off. Press it on the keyboard of the computer showing the scoreboard.</p>';
+    return h + '</div>';
+  }
+  function keysClick(b) {                // shared by the lobby and the host menu; true if it was ours
+    var a = b.dataset.a;
+    if (a === 'keySet') { H('keySet', { team: b.dataset.team === '' ? null : Number(b.dataset.team) }); return true; }
+    return false;
+  }
+  // The host's own keyboard counts too (hosting from a laptop): choosing a key, and buzzing.
+  function hostKey(e) {
+    var ks = S && me && me.isHost && S.settings && S.settings.keys;
+    if (!ks || !conn || editorOpen || hostChatOpen) return;
+    if (e.target.matches && e.target.matches('input, textarea, select')) return;
+    if (S.keyAsk != null && e.key === 'Escape' && e.type === 'keydown') { H('keySet', { team: null }); return; }
+    var k = F.keyInfo(e);
+    if (!k) return;
+    if (S.keyAsk != null) {
+      e.preventDefault();
+      if (!e.repeat && e.type === 'keydown') H('keyPick', { code: k.code, label: k.label });
+      return;
+    }
+    if (!ks.on) return;
+    var team = ks.codes.indexOf(k.code);
+    if (team < 0) return;
+    e.preventDefault();                  // so Space or Enter can't also press whatever button has focus
+    if (!e.repeat && e.type === 'keydown' && S.phase === 'faceoff' && S.game && S.game.fo.open) H('keyBuzz', { team: team });
+  }
+  addEventListener('keydown', hostKey);
+  addEventListener('keyup', hostKey);
+
   /* ------------------------------------------------------------ lobby */
   var lobbyDirty = false;
   function renderLobby() {
@@ -780,7 +844,8 @@
         '<button data-a="rounds" data-d="-1"' + (st.rounds <= 1 ? ' disabled' : '') + ' aria-label="Fewer rounds">' + ic('minus') + '</button><b data-key="r' + st.rounds + '">' + st.rounds + '</b>' +
         '<button data-a="rounds" data-d="1"' + (st.rounds >= S.maxRounds ? ' disabled' : '') + ' aria-label="More rounds">' + ic('plus') + '</button></div></div>' +
         '<div class="toggle"><div>Answer timer<small>Optional. Tap it during a turn to hurry someone along.</small></div><div class="seg" style="--i:' + Math.max(0, [5, 10, 15, 20].indexOf(st.answerSecs)) + '">' +
-        [5, 10, 15, 20].map(function (v) { return '<button data-a="secs" data-v="' + v + '" class="' + (st.answerSecs === v ? 'on' : '') + '">' + v + 's</button>'; }).join('') + '</div></div></div>';
+        [5, 10, 15, 20].map(function (v) { return '<button data-a="secs" data-v="' + v + '" class="' + (st.answerSecs === v ? 'on' : '') + '">' + v + 's</button>'; }).join('') + '</div></div>' +
+        keysBlock() + '</div>';
       h += '<div class="card" data-key="packs"><h3><span>Question packs</span><small>' + st.packs.length + ' ON</small></h3>';
       S.packs.forEach(function (pk) {
         h += '<div class="toggle" data-key="pk-' + pk.id + '"><div>' + esc(pk.name) + (pk.adult ? '<span class="tag">18+</span>' : '') + '<small>' + esc(pk.blurb) + ' ' + pk.count + ' questions.</small></div>' +
@@ -830,6 +895,7 @@
     else if (a === 'start') H('start');
     else if (a === 'loadSaved') H('custom', { list: F.savedQuestions() });
     else if (a === 'editor') openEditor();
+    else if (keysClick(b)) { /* keyboard buzzers */ }
     else if (a === 'secs') H('settings', { answerSecs: Number(b.dataset.v) });
     else if (a === 'rounds') H('settings', { rounds: S.settings.rounds + Number(b.dataset.d) });
     else if (a === 'pack') {
@@ -901,7 +967,9 @@
       var btn = $('#buzzBtn');
       btn.classList.toggle('live', live); btn.classList.toggle('wait', !live);
       btn.textContent = live ? 'BUZZ' : 'GET READY';
-      $('#buzzNote').textContent = live ? 'First one to buzz gets to answer.' : 'Your buzzer goes live the moment the host starts reading the question.';
+      var myKey = S.settings.keys && S.settings.keys.on ? S.settings.keys.labels[me.team] : null;
+      $('#buzzNote').textContent = (live ? 'First one to buzz gets to answer.' : 'Your buzzer goes live the moment the host starts reading the question.') +
+        (myKey ? ' You can also hit ' + myKey + ' on the TV computer’s keyboard.' : '');
     } else if (!isFm) {
       pBoard.update(g, !!has.reveal);
       $('#pQ').textContent = g.question || ((S.phase === 'question' || S.phase === 'faceoff') ? 'Listen up: the host reads the question out loud.' : '');
@@ -1086,7 +1154,8 @@
         '<button class="btn gold big" data-a="open">OPEN THE BUZZERS</button>' +
         '<div class="row"><button class="btn ghost sm" data-a="swap">Skip to a different question</button></div>';
     } else if (ph === 'faceoff' && g.fo.buzzed == null) {
-      p = '<p><b>Buzzers are live.</b> Waiting for ' + esc(names[0]) + ' or ' + esc(names[1]) + ' to buzz…</p>' +
+      var kb = S.settings.keys && S.settings.keys.on ? S.settings.keys.labels : null;
+      p = '<p><b>Buzzers are live.</b> Waiting for ' + esc(names[0]) + (kb ? ' <kbd>' + esc(kb[0]) + '</kbd>' : '') + ' or ' + esc(names[1]) + (kb ? ' <kbd>' + esc(kb[1]) + '</kbd>' : '') + ' to buzz…</p>' +
         '<p style="color:#9fb0ee;font-size:13px">Phone trouble? Call it yourself:</p>' +
         '<div class="row"><button class="btn sm" data-a="mbuzz" data-team="0">' + esc(T(0)) + ' buzzed</button><button class="btn sm" data-a="mbuzz" data-team="1">' + esc(T(1)) + ' buzzed</button></div>';
     } else if (ph === 'faceoff') {
@@ -1247,6 +1316,8 @@
       if (!b) return;
       var a = b.dataset.a;
       if (a === 'close') closeMenu();
+      else if (a === 'set') { var o = {}; o[b.dataset.k] = !b.classList.contains('on'); H('settings', o); }
+      else if (keysClick(b)) { /* keyboard buzzers */ }
       else if (a === 'adj') H('adjust', { team: Number(b.dataset.team), delta: Number(b.dataset.d) });
       else if (a === 'move') H('move', { id: b.dataset.id, team: Number(b.dataset.team) });
       else if (a === 'kick') { if (confirm('Remove this player?')) H('kick', { id: b.dataset.id }); }
@@ -1316,6 +1387,7 @@
     menuDirty = false;
     var g = S.game;
     var h = '<div class="menu"><div class="row" style="align-items:center;margin-bottom:10px"><h2 class="t" style="text-align:left;margin:0">Host menu</h2><button class="btn sm" data-a="close" style="flex:none;width:90px">Close</button></div>';
+    h += '<div class="card" data-key="kb"><h3><span>Buzzers</span></h3>' + keysBlock() + '</div>';
     h += '<div class="card" data-key="names"><h3><span>Team names</span></h3>';
     [0, 1].forEach(function (t) {
       h += '<form class="nameform" data-hostname="' + t + '"><input maxlength="18" placeholder="Rename this team" aria-label="Team ' + (t + 1) + ' name" value="' + (S.teams[t].named ? esc(T(t)) : '') + '"><button>Rename</button></form>';

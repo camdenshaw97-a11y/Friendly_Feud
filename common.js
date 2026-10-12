@@ -6,7 +6,7 @@
   // Change this to rename the game everywhere.
   F.TITLE = 'FRIEND FEUD';
   // Shown small on the start screens. Goes up with every change; CHANGELOG.md says what each one was.
-  F.VERSION = '1.6';
+  F.VERSION = '1.7';
   // Shown in the TV lobby while lobby.mp3 is playing. Change it if you change the recording.
   F.MUSIC_CREDIT = 'Music: “Private Eye” by Kevin MacLeod (incompetech.com) · CC BY 3.0';
 
@@ -21,6 +21,20 @@
     get: function (k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } },
     del: function (k) { try { localStorage.removeItem(k); } catch (e) { /* private mode */ } }
+  };
+
+  /* ---- keyboard buzzers: which key was pressed, and what to call it ----
+     Returns { code, label } for a key that can be a buzzer, or null for one that can't
+     (Escape, Tab, the F-keys, and Shift/Ctrl/Alt/Windows/Command, which belong to the computer).
+     "code" is the physical key, so it still matches with Caps Lock on or a different layout. */
+  F.keyInfo = function (e) {
+    var key = e.key || '', code = e.code || '';
+    if (e.ctrlKey || e.metaKey || e.altKey) return null;           // a browser shortcut, not a buzz
+    if (!key || /^(Escape|Esc|Tab|Shift|Control|Alt|AltGraph|Meta|OS|ContextMenu|CapsLock|NumLock|ScrollLock|Dead|Process|Unidentified|F\d+)$/.test(key)) return null;
+    var names = { ' ': 'SPACE', Spacebar: 'SPACE', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT', ArrowUp: 'UP', ArrowDown: 'DOWN', Backspace: 'BACKSPACE', Delete: 'DELETE', PageUp: 'PAGE UP', PageDown: 'PAGE DOWN' };
+    var label = names[key] || key.toUpperCase();
+    if (code.indexOf('Numpad') === 0) label = 'NUM ' + label;
+    return { code: code || 'key:' + key.toLowerCase(), label: label.slice(0, 12) };
   };
 
   /* ---- live connection with automatic reconnect ---- */

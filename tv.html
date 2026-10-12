@@ -267,6 +267,22 @@
   #fmTotal b { font: 400 104px/1 var(--display); padding-top: 10px; color: var(--gold); }
   #fmQ { position: absolute; left: 120px; right: 120px; top: 992px; text-align: center; font: 800 40px var(--text); text-shadow: 0 3px 0 #000; }
 
+  /* ---- keyboard buzzers: key caps, and the "press a key" card while the host is choosing one ---- */
+  kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 62px; height: 62px; box-sizing: border-box; padding: 6px 16px 0; border-radius: 12px;
+    font: 400 38px/1 var(--display); letter-spacing: .03em; white-space: nowrap; color: #111; background: linear-gradient(#fff, #d5dcf5); box-shadow: 0 6px 0 #7f8bb8, 0 10px 18px #0008;
+    animation: popIn .35s cubic-bezier(.3, 1.5, .5, 1); }
+  #lobby .team { position: relative; }
+  #lobby .tkey { position: absolute; right: 24px; bottom: 22px; display: none; align-items: center; gap: 14px; font: 400 26px var(--display); letter-spacing: .1em; color: #cfdcff; }
+  #lobby .tkey.on { display: flex; }
+  .side .kcap { display: flex; align-items: center; gap: 14px; font: 400 30px var(--display); letter-spacing: .1em; color: var(--gold); text-shadow: 0 2px 0 #000; }
+  #keyAsk { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: #020617d9; z-index: 23; text-align: center; }
+  #keyAsk.on { display: flex; animation: fadeIn .2s ease-out; }
+  #keyAsk > div { width: 1400px; box-sizing: border-box; padding: 54px 60px 48px; animation: popIn .35s cubic-bezier(.3, 1.4, .5, 1); }
+  #keyAsk small { display: block; font: 400 40px/1 var(--display); letter-spacing: .22em; margin-right: -.22em; color: #cfdcff; }
+  #keyAsk b { display: block; margin: 18px 0 14px; font: 400 112px/1.12 var(--display); letter-spacing: .03em; color: var(--gold); text-shadow: 0 5px 0 #000; white-space: nowrap; overflow: hidden; }
+  #keyAsk span { display: block; font: 700 36px/1.3 var(--text); color: #fff; }
+  #keyAsk.dup span { color: #ff9d98; }
+
   #tools { position: absolute; right: 24px; bottom: 16px; display: flex; gap: 10px; z-index: 30; opacity: 0; pointer-events: none; transition: opacity .25s; }
   #tools.show, #tools:focus-within { opacity: 1; pointer-events: auto; }
   #tools .chip { font-size: 18px; padding: 7px 16px; }
@@ -300,8 +316,8 @@
       <div class="code" id="codeBig"></div>
     </div>
     <div class="teams">
-      <div class="team box"><h4 id="l0n"></h4><ul id="l0p"></ul></div>
-      <div class="team box"><h4 id="l1n"></h4><ul id="l1p"></ul></div>
+      <div class="team box"><h4 id="l0n"></h4><ul id="l0p"></ul><div class="tkey" id="l0k"></div></div>
+      <div class="team box"><h4 id="l1n"></h4><ul id="l1p"></ul><div class="tkey" id="l1k"></div></div>
     </div>
     <div class="hostline box" id="hostLine"></div>
     <div class="foot">
@@ -337,6 +353,7 @@
   <div id="intro"><div class="band"><small>GET READY</small><b></b><span></span></div></div>
   <div id="xwrap"></div>
   <div id="banner"><div></div></div>
+  <div id="keyAsk"><div class="box"><small>KEYBOARD BUZZERS</small><b></b><span></span></div></div>
   <div id="offline">Reconnecting…</div>
   <div id="tools">
     <button class="chip" id="btnSound">Sound: on</button>
@@ -355,6 +372,7 @@
   var stage = $('#stage');
   var room = F.store.get('feud.tv', null);       // { code, token }
   var S = null, lastSeq = null, hello = null, conn = null;
+  var admin = false;                              // true on the screen that started the room: its keyboard can buzz
   var board = F.Board($('#board'));
   var urlCode = (new URLSearchParams(location.search).get('code') || '').toUpperCase();
 
@@ -417,7 +435,9 @@
   $('#btnResume').onclick = function () { busy(this); begin({ t: 'watch', code: room.code, token: room.token }); };
 
   function onMessage(m) {
-    if (m.t === 'created') {
+    if (m.t === 'watching') admin = !!m.admin;
+    else if (m.t === 'created') {
+      admin = true;
       room = { code: m.code, token: m.token };
       F.store.set('feud.tv', room);
       hello = { t: 'watch', code: room.code, token: room.token };
@@ -525,6 +545,7 @@
     var has = {};
     fresh.forEach(function (e) { has[e.type] = e; });
     if (has.undo || has.lobby) clearOverlays();
+    paintKeyAsk(s, has);
 
     // Music plays while people are joining and again once there's a winner, never over a round.
     clearTimeout(musicLater);
@@ -539,6 +560,45 @@
     }
     show('game');
     renderGame(s, fresh, has);
+  }
+
+  /* ---- keyboard buzzers ----
+     While the host is choosing a team's key, a card asks for it and the next key pressed here is
+     the answer. Otherwise, with keyboard buzzers on, each team's key buzzes for whoever is up. */
+  var askDup = null;
+  function paintKeyAsk(s, has) {
+    var el = $('#keyAsk'), t = s.keyAsk;
+    if (t == null) { el.classList.remove('on', 'dup'); askDup = null; }
+    else {
+      if (has.keyAsk) askDup = null;
+      if (has.keyDup) { askDup = has.keyDup.label; sfx.dup(); }
+      el.querySelector('b').textContent = 'PRESS A KEY FOR ' + s.teams[t].name;
+      el.querySelector('span').textContent = askDup
+        ? askDup + ' is already ' + s.teams[1 - t].name + '’s key. Press a different one.'
+        : admin ? 'Press the key on this keyboard that ' + s.teams[t].name + ' will buzz with.'
+        : 'Press it on the computer that started this game.';
+      el.classList.toggle('dup', !!askDup);
+      el.classList.add('on');
+      F.fit(el.querySelector('b'));
+    }
+    if (has.keySet) { sfx.lock(); banner(s.teams[has.keySet.team].name + ' BUZZER: ' + has.keySet.label, 1700); }
+  }
+  function buzzKey(e) {                  // true if this key press belonged to the buzzers
+    var ks = S && S.settings && S.settings.keys;
+    if (!ks || !conn || !admin) return false;
+    var k = F.keyInfo(e);
+    if (!k) return false;
+    if (S.keyAsk != null) {
+      e.preventDefault();
+      if (!e.repeat && e.type === 'keydown') conn.send({ t: 'kkey', code: k.code, label: k.label });
+      return true;
+    }
+    if (!ks.on) return false;
+    var team = ks.codes.indexOf(k.code);
+    if (team < 0) return false;
+    e.preventDefault();                  // so Space or Enter can't also press whatever button has focus
+    if (!e.repeat && e.type === 'keydown' && S.phase === 'faceoff' && S.game && S.game.fo.open) conn.send({ t: 'kbuzz', team: team });
+    return true;
   }
 
   var lobbySeen = null;
@@ -570,11 +630,18 @@
     F.morph($('#hostLine'), s.host
       ? '<b>HOST</b> <span data-key="h' + s.host.id + '" class="hn">' + esc(s.host.name) + (s.host.on ? '' : ' (reconnecting…)') + '</span>'
       : '<b>HOST</b> <span data-key="none" style="color:#b9c6f5">Nobody yet. One person taps “Be the host” on their phone.</span>');
+    var ks = s.settings.keys, keysOn = !!(ks && ks.on);
+    [0, 1].forEach(function (t) {
+      var k = $('#l' + t + 'k');
+      k.classList.toggle('on', keysOn);
+      F.morph(k, keysOn ? '<span>BUZZER KEY</span><kbd data-key="k' + esc(ks.labels[t]) + '">' + esc(ks.labels[t]) + '</kbd>' : '');
+    });
     var waiting = s.loose.map(function (p) { return p.name; });
     var ready = s.host && s.teams[0].players.length && s.teams[1].players.length;
     $('#lobbyNote').textContent = (waiting.length ? 'Still picking a team: ' + waiting.join(', ') + '.  ' : '') +
       (ready ? 'Ready when the host taps Start.' : 'Need a host and at least one player on each team.') +
       (s.customCount ? '  ' + s.customCount + ' of your own questions loaded.' : '') +
+      (keysOn && !admin ? '  Keyboard buzzers only work on the screen that started this room.' : '') +
       '  Packs: ' + s.packs.filter(function (p) { return s.settings.packs.indexOf(p.id) >= 0; }).map(function (p) { return p.name; }).join(', ') + '.';
   }
 
@@ -582,6 +649,7 @@
   function renderGame(s, fresh, has) {
     var g = s.game;
     var T = function (i) { return s.teams[i].name; };
+    var ks = s.settings.keys;
 
     // board
     board.update(g, !!has.reveal);
@@ -611,7 +679,10 @@
       var n = $('#t' + t + 'n'); if (n.textContent !== T(t)) n.textContent = T(t);
       if (!(hold && hold.team === t)) F.countTo($('#t' + t + 's'), g.scores[t], has.award ? 900 : 0);
       var showX = (s.phase === 'play' || s.phase === 'steal') && g.playing === t;
-      F.morph($('#t' + t + 'x'), showX ? [0, 1, 2].map(function (k) { return '<i class="' + (k < g.strikes ? 'hit' : '') + (has.strike && k === g.strikes - 1 ? ' new' : '') + '"></i>'; }).join('') : '');
+      // during the face-off, with keyboard buzzers on, the strike row shows the team's key instead
+      var showKey = !!(ks && ks.on) && (s.phase === 'question' || (s.phase === 'faceoff' && g.fo.buzzed == null));
+      F.morph($('#t' + t + 'x'), showX ? [0, 1, 2].map(function (k) { return '<i class="' + (k < g.strikes ? 'hit' : '') + (has.strike && k === g.strikes - 1 ? ' new' : '') + '"></i>'; }).join('')
+        : showKey ? '<span class="kcap" data-key="kcap"><span>BUZZ</span><kbd data-key="k' + esc(ks.labels[t]) + '">' + esc(ks.labels[t]) + '</kbd></span>' : '');
       var up = g.answerer && g.answerer.id;
       var fo = (s.phase === 'question' || (s.phase === 'faceoff' && g.fo.buzzed == null)) ? g.fo.pids[t] : null;
       $('#t' + t + 'r').innerHTML = s.teams[t].players.map(function (p) {
@@ -886,11 +957,13 @@
     toolTimer = setTimeout(function () { $('#tools').classList.remove('show'); }, 3000);
   });
   addEventListener('keydown', function (e) {
-    if (e.target.matches('input, textarea')) return;
+    if (e.target.matches('input, textarea, select')) return;
+    if (buzzKey(e)) return;                 // a team's buzzer key wins over the shortcuts below
     if (e.key === 'f' || e.key === 'F') $('#btnFull').click();
     if (e.key === 'm' || e.key === 'M') $('#btnSound').click();
     if (e.key === 'b' || e.key === 'B') document.querySelector('[data-music]').click();      // B for background music
   });
+  addEventListener('keyup', function (e) { if (!e.target.matches('input, textarea, select')) buzzKey(e); });
 })();
 </script>
 </body>

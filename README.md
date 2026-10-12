@@ -46,6 +46,11 @@ host and runs the board from their phone.
   decides whether it costs a strike.
 - **Chat**: players have a private team chat and an everyone chat. The host
   can read and post in the everyone chat.
+- **Keyboard buzzers**: optional, off by default. Switch it on in the lobby (or
+  in the in-game Menu, where it can also be switched off mid-game) and each
+  team gets a key on the keyboard of the computer showing the scoreboard: A
+  and L to start with. Tap Change next to a team, then press the key you want
+  on that keyboard. Phone buzzers keep working alongside.
 - **Fast Money, more time**: `+5 sec` beside the host's clock adds five seconds
   per tap. If the clock runs out with a question unanswered, the host can put
   five seconds back on, as long as nothing has been revealed yet.

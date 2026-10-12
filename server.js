@@ -45,6 +45,7 @@ const FM_SECONDS = [20, 25];
 const MAX_PLAYERS = 40;
 const MAX_ROUNDS = 15;
 const ROOM_IDLE_MS = 6 * 60 * 60 * 1000;
+const KEY_ASK_MS = 20000;              // how long "press the key you want" waits before giving up
 
 const rooms = new Map();
 
@@ -140,7 +141,11 @@ function newRoom() {
     players: new Map(),
     teams: [{ name: '', order: [] }, { name: '', order: [] }],
     hostId: null,
-    settings: { fastMoney: true, useCustom: true, packs: ['general'], answerSecs: 10, rounds: 3 },
+    settings: {
+      fastMoney: true, useCustom: true, packs: ['general'], answerSecs: 10, rounds: 3,
+      // Keyboard buzzers: one key per team, pressed on the TV computer (or the host's own keyboard).
+      keys: { on: false, codes: ['KeyA', 'KeyL'], labels: ['A', 'L'] }
+    },
     custom: [],
     used: new Set(),      // built-in question ids already seen on this TV
     chat: [[], []],       // one private log per team
@@ -148,6 +153,7 @@ function newRoom() {
     chatSeq: 0,
     chatEpoch: 0,         // goes up each time the chats are wiped, so phones clear theirs too
     answerTimer: null,    // optional countdown the host can start
+    keyAsk: null,         // set while the host is choosing a team's buzzer key: { team, handle }
     game: null,
     history: [],
     fx: [],
@@ -632,9 +638,49 @@ function startAnswerTimer(room) {
   fx(room, 'timerGo', { secs });
 }
 
+/* ------------------------------------------------------ keyboard buzzers */
+
+function clearKeyAsk(room) {
+  if (room.keyAsk) { clearTimeout(room.keyAsk.handle); room.keyAsk = null; }
+}
+
+// The host tapped "Change" beside a team's key: the next key pressed becomes that team's buzzer.
+function startKeyAsk(room, team) {
+  clearKeyAsk(room);
+  room.keyAsk = {
+    team,
+    handle: setTimeout(() => {
+      room.keyAsk = null;
+      fx(room, 'keyCancel', { team });   // nobody pressed anything: the old key stays
+      pushAll(room);
+    }, KEY_ASK_MS)
+  };
+  fx(room, 'keyAsk', { team });
+}
+
+function keyPick(room, code, label) {
+  const ask = room.keyAsk;
+  if (!ask) return false;
+  code = clean(code, 32);
+  label = clean(label, 12).toUpperCase();
+  if (!code || !label) return false;
+  const keys = room.settings.keys, team = ask.team;
+  if (keys.codes[1 - team] === code) { fx(room, 'keyDup', { team, label }); return true; }   // the other team has it: keep waiting
+  keys.codes[team] = code;
+  keys.labels[team] = label;
+  clearKeyAsk(room);
+  fx(room, 'keySet', { team, label });
+  return true;
+}
+
+function keyBuzz(room, team) {
+  if (!room.settings.keys.on || room.keyAsk || (team !== 0 && team !== 1)) return false;
+  return doBuzz(room, team, true);
+}
+
 /* ----------------------------------------------------------- host action */
 
-const KEEPS_TIMER = new Set(['timer', 'adjust', 'move', 'kick', 'settings', 'custom', 'teamName']);
+const KEEPS_TIMER = new Set(['timer', 'adjust', 'move', 'kick', 'settings', 'custom', 'teamName', 'keySet', 'keyPick', 'keyBuzz']);
 
 function hostAction(room, m) {
   const g = room.game;
@@ -656,7 +702,17 @@ function hostAction(room, m) {
       if (Array.isArray(m.packs) && !g) {
         room.settings.packs = BANK.packs.map(p => p.id).filter(id => m.packs.includes(id));
       }
+      if (typeof m.keysOn === 'boolean') {        // any time, lobby or mid-game
+        room.settings.keys.on = m.keysOn;
+        if (!m.keysOn) clearKeyAsk(room);
+      }
       break;
+    case 'keySet':                     // choose a team's key (team 0 or 1), or call it off (anything else)
+      if ((m.team === 0 || m.team === 1) && room.settings.keys.on) startKeyAsk(room, m.team);
+      else clearKeyAsk(room);
+      break;
+    case 'keyPick': keyPick(room, m.code, m.label); break;     // the key was pressed on the host's own keyboard
+    case 'keyBuzz': keyBuzz(room, m.team); break;
     case 'custom':
       if (!g) room.custom = cleanCustom(m.list);   // only between games
       break;
@@ -767,6 +823,7 @@ function publicState(room) {
     maxRounds: MAX_ROUNDS,
     customCount: room.custom.length,
     chatEpoch: room.chatEpoch,
+    keyAsk: room.keyAsk ? room.keyAsk.team : null,
     fx: room.fx,
     game: null
   };
@@ -941,6 +998,10 @@ function onMessage(ws, m) {
 
   if (ws.display) {
     if (m.t === 'custom' && ws.admin && !room.game) { room.custom = cleanCustom(m.list); pushAll(room); }
+    // Keyboard buzzers: only the screen that started the room counts, so nobody can open the
+    // scoreboard on a laptop of their own and buzz from there.
+    else if (m.t === 'kbuzz' && ws.admin) { if (keyBuzz(room, m.team)) pushAll(room); }
+    else if (m.t === 'kkey' && ws.admin) { if (keyPick(room, m.code, m.label)) pushAll(room); }
     return;
   }
 
@@ -1046,7 +1107,7 @@ setInterval(() => {
   }
   const now = Date.now();
   for (const [code, room] of rooms) {
-    if (now - room.touched > ROOM_IDLE_MS) { clearFmTimer(room); clearAnswerTimer(room); rooms.delete(code); }
+    if (now - room.touched > ROOM_IDLE_MS) { clearFmTimer(room); clearAnswerTimer(room); clearKeyAsk(room); rooms.delete(code); }
   }
 }, 30000);
 

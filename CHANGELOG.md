@@ -8,7 +8,30 @@ Times are Pacific. The code in brackets is the GitHub commit for that change: on
 **Commits** and click it to see exactly which lines changed, or to get the game back to how it
 was at that point.
 
-## 1.6 · October 11, 2026, 9:25 pm
+## 1.7 · October 12, 2026, 10:25 am
+
+**Keyboard buzzers**
+- New switch in the host's lobby, under Game settings: **Keyboard buzzers**. It is off until you
+  turn it on. With it on, each team has one key on the keyboard of the computer showing the
+  scoreboard, and pressing it buzzes in for whoever is up in the face-off for that team.
+- **Pick the keys.** Each team's key is listed under the switch (they start as **A** for the team
+  on the left and **L** for the team on the right). Tap **Change**, and the TV asks for a key: the
+  next key pressed on its keyboard becomes that team's buzzer. Letters, numbers, Space, Enter, the
+  arrows and the number pad all work. The two teams can't share a key, and if nothing is pressed
+  for 20 seconds the old key stays.
+- **The same switch is in the in-game Menu**, at the top, so keyboard buzzers can be turned off (or
+  back on, or given different keys) in the middle of a game.
+- The TV shows each team's key in the lobby and beside its score during a face-off. Phones show it
+  under the buzzer, and the host's phone shows it next to the two names while the buzzers are live.
+- Phone buzzers keep working while keyboard buzzers are on, and a keyboard buzz counts toward
+  Fastest buzzer the same way a phone buzz does.
+- Only the computer that started the room can buzz from its keyboard, so nobody can open the
+  scoreboard on their own laptop and buzz from there. If the host is on a computer, the host's own
+  keyboard works too.
+- A team's key takes priority over the TV's F, M and B shortcuts while keyboard buzzers are on.
+  Shift, Ctrl, Alt, Tab, Escape and the F1 to F12 keys can't be buzzers.
+
+## 1.6 · October 11, 2026, 9:25 pm  [fdf86e6]
 
 **Fast Money: tools for the host**
 - **Change an answer after the buzzer.** When the clock stops, every answer that hasn't been
