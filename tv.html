@@ -221,6 +221,8 @@
   #winner h1 { font: 400 200px/1.05 var(--display); margin: 0; color: var(--gold); text-shadow: 0 8px 0 #5a3200, 0 0 80px #ffd24a88; width: 1760px; white-space: nowrap; overflow: hidden; }
   #winner h2 { font: 400 70px var(--display); margin: 0; letter-spacing: .05em; }
   #winner p { font-size: 40px; margin: 0; color: #cfdcff; }
+  #winner.final p { font: 400 54px var(--display); letter-spacing: .05em; color: #fff; }
+  #winner.final p b { color: var(--gold); font-weight: 400; }
   .confetti { position: absolute; top: -40px; width: 18px; height: 30px; animation: fall linear infinite; z-index: 16; pointer-events: none; }
   @keyframes fall { to { transform: translateY(1200px) rotate(720deg); } }
 
@@ -319,7 +321,6 @@
     <div class="side right" id="side1"><div class="tname" id="t1n"></div><div class="tscore box"><div id="t1s">0</div></div><div class="xs" id="t1x"></div><div class="roster" id="t1r"></div></div>
     <div id="question"></div>
     <div id="status"></div>
-    <div id="winner"><h2 id="winSub"></h2><h1 id="winName"></h1><h2 id="winScore"></h2><div id="winAwards"></div><p id="winNext"></p></div>
   </section>
 
   <section class="screen" id="fm">
@@ -331,6 +332,7 @@
     <div id="fmQ"></div>
   </section>
 
+  <div id="winner"><h2 id="winSub"></h2><h1 id="winName"></h1><h2 id="winScore"></h2><div id="winAwards"></div><p id="winNext"></p></div>
   <div id="joinTag"><div class="jt"><small>SCAN TO JOIN</small><b id="jtCode"></b></div><img id="jtQr" alt="QR code to join this game"></div>
   <div id="intro"><div class="band"><small>GET READY</small><b></b><span></span></div></div>
   <div id="xwrap"></div>
@@ -422,7 +424,7 @@
     } else if (m.t === 'error') {
       if (m.code === 'noroom') {
         F.store.del('feud.tv'); room = null; S = null; hello = null;
-        busy(null); stopAward(); hideIntro();
+        busy(null); stopAward(); hideIntro(); hideWinner();
         $('#btnResume').style.display = 'none';
         $('#startMsg').textContent = m.msg;
         show('start');
@@ -528,9 +530,13 @@
     clearTimeout(musicLater);
     if (s.phase === 'lobby') F.music.scene('lobby');
     else if (s.phase === 'gameOver') { if (has.win) { F.music.scene(null); musicLater = setTimeout(function () { F.music.scene('win'); }, 3400); } else F.music.scene('win'); }
-    else F.music.scene(null);
-    if (s.phase === 'lobby') { show('lobby'); setAnswerTimer(null); stopAward(); hideIntro(); renderLobby(s); confetti(false); return; }
-    if (s.phase === 'fm') { show('fm'); setAnswerTimer(null); stopAward(); hideIntro(); renderFm(s, fresh); return; }
+    else if (!(s.phase === 'fm' && $('#winner').classList.contains('final'))) F.music.scene(null);
+    if (s.phase === 'lobby') { show('lobby'); setAnswerTimer(null); stopAward(); hideIntro(); hideWinner(); renderLobby(s); confetti(false); return; }
+    if (s.phase === 'fm') {
+      show('fm'); setAnswerTimer(null); stopAward(); hideIntro(); renderFm(s, fresh);
+      if (s.game.fm.stage === 'done') closingScreen(s, has); else hideWinner();
+      return;
+    }
     show('game');
     renderGame(s, fresh, has);
   }
@@ -647,22 +653,44 @@
     }
 
     // winner
+    if (s.phase === 'gameOver') { paintWinner(s, false); if (has.win) sfx.win(); }
+    else hideWinner();
+  }
+
+  /* The winner screen. It shows when the rounds are over, and comes back as the closing screen
+     once Fast Money is finished, so the awards are the last thing everyone sees. */
+  var finalAt = null, finalLater = null;
+  function paintWinner(s, final) {
+    var g = s.game, w = $('#winner'), T = function (i) { return s.teams[i].name; };
+    $('#winSub').textContent = final ? 'THAT’S THE GAME!' : 'AND THE WINNERS ARE…';
+    $('#winName').textContent = T(g.winner);
+    $('#winScore').textContent = T(0) + ' ' + g.scores[0] + '   ·   ' + T(1) + ' ' + g.scores[1];
+    if (final) $('#winNext').innerHTML = 'FAST MONEY: <b>' + g.fm.total + '</b> OF ' + g.fm.target + (g.fm.won ? ' · THEY GOT IT!' : ' · SO CLOSE');
+    else $('#winNext').textContent = s.settings.fastMoney ? 'Stick around: Fast Money is next.' : '';
+    var aw = g.awards || [];
+    w.classList.toggle('awards', aw.length > 0);
+    w.classList.toggle('final', !!final);
+    if (final) $('#joinTag').classList.remove('fm');          // back to its usual corner, clear of the awards
+    F.morph($('#winAwards'), aw.map(function (a) {
+      return '<div class="aw ' + a.key + '" data-key="' + a.key + '"><small>' + esc(a.title) + '</small><b>' + esc(a.name) + '</b><span>' + esc(a.note) + '</span><i>' + esc(T(a.team)) + '</i></div>';
+    }).join(''));
+    if (!w.classList.contains('on')) { w.classList.add('on'); confetti(true); }
+    document.querySelectorAll('#winAwards b').forEach(function (n) { F.fit(n); });
+    F.fit($('#winName'));
+  }
+  function hideWinner() {
     var w = $('#winner');
-    if (s.phase === 'gameOver') {
-      $('#winSub').textContent = 'AND THE WINNERS ARE…';
-      $('#winName').textContent = T(g.winner);
-      $('#winScore').textContent = T(0) + ' ' + g.scores[0] + '   ·   ' + T(1) + ' ' + g.scores[1];
-      $('#winNext').textContent = s.settings.fastMoney ? 'Stick around: Fast Money is next.' : '';
-      var aw = g.awards || [];
-      w.classList.toggle('awards', aw.length > 0);
-      F.morph($('#winAwards'), aw.map(function (a) {
-        return '<div class="aw ' + a.key + '" data-key="' + a.key + '"><small>' + esc(a.title) + '</small><b>' + esc(a.name) + '</b><span>' + esc(a.note) + '</span><i>' + esc(T(a.team)) + '</i></div>';
-      }).join(''));
-      document.querySelectorAll('#winAwards b').forEach(function (n) { F.fit(n); });
-      F.fit($('#winName'));
-      if (!w.classList.contains('on')) { w.classList.add('on'); confetti(true); }
-      if (has.win) sfx.win();
-    } else if (w.classList.contains('on')) { w.classList.remove('on'); confetti(false); }
+    clearTimeout(finalLater); finalLater = null; finalAt = null;
+    if (w.classList.contains('on')) { w.classList.remove('on', 'final'); confetti(false); }
+  }
+  // Fast Money is over: give the result its moment, then bring the closing screen up.
+  function closingScreen(s, has) {
+    if (has.fmWin || has.fmLose) finalAt = Date.now() + 7500;
+    clearTimeout(finalLater);
+    var wait = finalAt ? finalAt - Date.now() : 0;
+    if (wait > 0) {
+      finalLater = setTimeout(function () { if (S && S.phase === 'fm' && S.game.fm && S.game.fm.stage === 'done') { paintWinner(S, true); F.music.scene('win'); } }, wait);
+    } else { paintWinner(s, true); F.music.scene('win'); }
   }
 
   /* ---- points fly from the bank to the team that won them ---- */
@@ -812,6 +840,7 @@
     if (has.fmGo) sfx.buzz();
     if (has.fmLock) sfx.lock();
     if (has.fmDup) { sfx.dup(); banner('ALREADY SAID! TRY AGAIN', 1300, true); }
+    if (has.fmMore) { sfx.lock(); banner('+5 SECONDS', 1000); }
     if (has.fmTimeUp) { sfx.timeUp(); banner('TIME’S UP!', 1600, true); }
     if (has.fmWin) setTimeout(function () { sfx.win(); confetti(true); banner('FAST MONEY WIN!', 4000); }, 1800);
     if (has.fmLose) setTimeout(function () { sfx.lose(); }, 1800);

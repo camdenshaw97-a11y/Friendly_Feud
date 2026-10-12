@@ -6,7 +6,7 @@
   // Change this to rename the game everywhere.
   F.TITLE = 'FRIEND FEUD';
   // Shown small on the start screens. Goes up with every change; CHANGELOG.md says what each one was.
-  F.VERSION = '1.5.1';
+  F.VERSION = '1.6';
   // Shown in the TV lobby while lobby.mp3 is playing. Change it if you change the recording.
   F.MUSIC_CREDIT = 'Music: “Private Eye” by Kevin MacLeod (incompetech.com) · CC BY 3.0';
 
@@ -26,6 +26,20 @@
   /* ---- live connection with automatic reconnect ---- */
   F.connect = function (opts) {
     var ws = null, timer = null, tries = 0, stopped = false;
+    // A screen left open across an update would keep running the old game. Each page knows which
+    // build it is, so whenever it connects (and every few minutes) it asks the server which build
+    // is current, and reloads itself if that has changed.
+    var myBuild = document.documentElement.getAttribute('data-build');
+    function freshCheck() {
+      if (!myBuild || !window.fetch) return;
+      fetch('/version', { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
+        if (!v || v === myBuild) return;
+        var last = Number(F.store.get('feud.reloadAt', 0));
+        if (Date.now() - last < 30000) return;                     // never loop
+        F.store.set('feud.reloadAt', Date.now());
+        location.reload();
+      }).catch(function () { /* offline: try again next time */ });
+    }
     function open() {
       timer = null;
       if (stopped) return;
@@ -35,6 +49,7 @@
       var mine = ws;
       mine.onopen = function () {
         tries = 0;
+        freshCheck();
         if (opts.onStatus) opts.onStatus(true);
         var h = opts.hello && opts.hello();
         if (h) mine.send(JSON.stringify(h));
@@ -64,7 +79,7 @@
     open();
     setInterval(function () { api.send({ t: 'ping' }); }, 20000);
     // Keeps a free host from putting the server to sleep mid-party.
-    setInterval(function () { try { fetch('/health').catch(function () {}); } catch (e) { /* ignore */ } }, 4 * 60 * 1000);
+    setInterval(function () { try { fetch('/health').catch(function () {}); freshCheck(); } catch (e) { /* ignore */ } }, 4 * 60 * 1000);
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden && !stopped && (!ws || ws.readyState > 1)) {
         if (timer) { clearTimeout(timer); timer = null; }

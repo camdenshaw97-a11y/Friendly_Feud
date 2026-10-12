@@ -337,6 +337,42 @@
   .adj button:active, .adj button[data-fx-press] { transform: scale(.88); filter: brightness(1.25); }
   .clock { font: 400 64px/1 var(--display); text-align: center; color: var(--gold); margin: 2px 0 8px; transition: color .3s; }
   .clock.hot { color: #ff6a60; }
+  /* fast money: "+5 seconds" sits beside the clock, and each answer can be changed until it's revealed */
+  .clockrow { position: relative; }
+  .clockrow .more { position: absolute; right: 0; top: 50%; margin-top: -19px; }
+  .clockrow .more .btn { width: auto; padding: 9px 12px; white-space: nowrap; }
+  .fmlist div.row2 { display: flex; align-items: center; gap: 10px; }
+  .fmlist div.row2 > span { flex: 1; min-width: 0; }
+  .fmlist div.row2 em { font-style: normal; color: #ff9d98; font-weight: 700; }
+  .fmlist .chg { flex: none; border: 0; border-radius: 9px; padding: 8px 12px; font: 800 13px var(--text); color: #231700; background: var(--gold); transition: transform .1s ease-out, filter .15s; }
+  .fmlist .chg:active, .fmlist .chg[data-fx-press] { transform: scale(.92); filter: brightness(.9); }
+  #host .prompt p.fmhint { font-size: 13px; color: #b9c6f5; }
+  @media (max-height: 700px) { #host .prompt p.fmhint { display: none; } }          /* short phones: the Change buttons speak for themselves */
+  @media (max-height: 600px) {
+    #host .fmlist { gap: 4px; }
+    #host .fmlist div { padding: 5px 10px; font-size: 13px; line-height: 1.3; }
+    #host .fmlist .chg { padding: 6px 10px; }
+  }
+  .pickq { background: #fff; color: #111; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; font-weight: 800; font-size: 17px; line-height: 1.3; }
+  .pickq small { display: block; font-size: 11px; letter-spacing: .08em; color: #4254f4; margin-bottom: 4px; }
+  .menu .hans button.cur { box-shadow: 0 0 0 3px var(--gold), 0 3px 0 #0a1f70; }
+  .menu .hans button.said { opacity: .45; }
+
+  /* a player's own numbers, shown on their phone when the game is over */
+  #pStats { display: none; margin-top: 8px; }
+  #play.stats #pStats { display: block; }
+  #play.stats:not(.fm) #pBoardWrap { display: none; }
+  .st-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+  .st-head b { font: 400 20px var(--display); letter-spacing: .06em; color: var(--gold); }
+  .st-head span { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
+  .st-head i { font: 800 10px/1 var(--text); font-style: normal; letter-spacing: .06em; padding: 5px 8px 4px; border-radius: 999px; color: #231700; background: var(--gold); animation: popIn .4s cubic-bezier(.3, 1.6, .5, 1) .7s backwards; }
+  .st-head i.miss { color: #fff; background: var(--red); }
+  .st-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .st-grid div { background: linear-gradient(#0b1c6b, #050d3d); border-radius: 12px; padding: 9px 4px 7px; text-align: center; box-shadow: inset 0 0 0 2px #24358a; animation: riseIn .4s cubic-bezier(.2, .9, .3, 1) backwards; }
+  .st-grid div:nth-child(2) { animation-delay: .08s; } .st-grid div:nth-child(3) { animation-delay: .16s; } .st-grid div:nth-child(4) { animation-delay: .24s; }
+  .st-grid b { display: block; font: 400 30px/1.05 var(--display); }
+  .st-grid small { display: block; margin-top: 3px; font-weight: 800; font-size: 10px; letter-spacing: .06em; color: #9fb0ee; }
+  .st-note { margin: 7px 2px 0; font-size: 13px; line-height: 1.35; color: #b9c6f5; text-align: center; }
   .fmlist { display: grid; gap: 6px; margin-bottom: 10px; }
   .fmlist div { background: #0d1a5c; border-radius: 10px; padding: 8px 12px; font-size: 14px; line-height: 1.35; transition: opacity .3s; }
   .fmlist div.done { opacity: .5; }
@@ -420,6 +456,7 @@
       <p id="buzzNote"></p>
     </div>
     <div id="pFm"></div>
+    <div id="pStats"></div>
   </div>
   <div class="chat" id="chatBox">
     <div class="chat-tabs">
@@ -569,7 +606,7 @@
     F.store.del('feud.me');
     closeMenu(true);
     if (hostChatOpen) { hostChatOpen = false; var hc = $('#hchat'); if (hc) hc.remove(); }
-    hidePop(); joinBusy(false); clearGate();
+    hidePop(); joinBusy(false); clearGate(); closeFmPick(true);
     show('join');
     $('#joinErr').textContent = msg || '';
     if (msg) joinShake();
@@ -634,6 +671,7 @@
     else { show('play'); renderPlay(has); }
     if (menuOpen) renderMenu();
     if (hostChatOpen) renderHostChat();
+    if (fmPickQ != null) renderFmPick();
     tickTimers();
   }
 
@@ -672,10 +710,6 @@
       var r = has.round;
       pop('round', r.sudden ? 'SUDDEN DEATH' : 'ROUND ' + r.round, r.sudden ? 'Win the face-off, win the game.' : ['Single', 'Double', 'Triple'][r.mult - 1] + ' points', 1500);
     } else if (has.win && has.win.team === me.team) { pop('in', 'YOU WON!', T(me.team), 2400); buzzPhone([80, 60, 80, 60, 200]); }
-    if (has.win) {                                // a quiet word for anyone who earned an award
-      var mine = (g.awards || []).filter(function (a) { return a.name === me.name && a.team === me.team; }).map(function (a) { return { mvp: 'You’re tonight’s MVP!', fast: 'Fastest buzzer: that’s you!', miss: 'Most strikes… that’s you.' }[a.key]; });
-      if (mine.length) setTimeout(function () { toast(mine[0]); }, has.win.team === me.team ? 2800 : 900);
-    }
   }
 
   function topBar(act) {
@@ -870,16 +904,37 @@
       $('#buzzNote').textContent = live ? 'First one to buzz gets to answer.' : 'Your buzzer goes live the moment the host starts reading the question.';
     } else if (!isFm) {
       pBoard.update(g, !!has.reveal);
-      var line = g.question || ((S.phase === 'question' || S.phase === 'faceoff') ? 'Listen up: the host reads the question out loud.' : '');
-      if (S.phase === 'gameOver' && g.awards && g.awards.length) {      // who earned a mention tonight
-        line = g.awards.map(function (a) { return { mvp: 'MVP', fast: 'Fastest buzzer', miss: 'Most strikes' }[a.key] + ': ' + a.name; }).join(' · ');
-      }
-      $('#pQ').textContent = line;
+      $('#pQ').textContent = g.question || ((S.phase === 'question' || S.phase === 'faceoff') ? 'Listen up: the host reads the question out loud.' : '');
       F.morph($('#pX'), (S.phase === 'play' || S.phase === 'steal') ? xs(g.strikes) : '');
     } else renderPlayFm(g.fm);
     if (has.buzz && has.buzz.team === me.team) buzzPhone(80);
 
+    // when the game is over, each phone shows that player's own numbers
+    var mine = me.stats;
+    root.classList.toggle('stats', !!mine);
+    if (mine) {
+      var badge = { mvp: 'MVP', fast: 'FASTEST BUZZER', miss: 'MOST STRIKES' };
+      var note = mine.answers ? (mine.tops ? mine.tops + ' of your answers ' + (mine.tops === 1 ? 'was' : 'were') + ' the number one answer.' : 'Every one of those points was yours.')
+        : 'No answers on the board this time. There’s always the next game.';
+      F.morph($('#pStats'), '<div class="st-head"><b>YOUR GAME</b><span>' + (me.awards || []).map(function (k) { return '<i class="' + k + '">' + badge[k] + '</i>'; }).join('') + '</span></div>' +
+        '<div class="st-grid"><div><b data-live data-n="' + mine.answers + '">0</b><small>ANSWERS</small></div><div><b data-live data-n="' + mine.points + '">0</b><small>POINTS</small></div>' +
+        '<div><b data-live data-n="' + mine.strikes + '">0</b><small>STRIKES</small></div><div><b>' + (mine.fastest == null ? '–' : (mine.fastest / 1000).toFixed(2) + 's') + '</b><small>BEST BUZZ</small></div></div>' +
+        '<p class="st-note">' + note + '</p>');
+      countUp($('#pStats'));
+    } else if ($('#pStats').firstChild) F.morph($('#pStats'), '');
+
     renderChat();
+  }
+
+  // numbers in the stats card start at zero and count up the first time they appear
+  function countUp(root) {
+    var els = root.querySelectorAll('[data-n]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i], to = Number(el.getAttribute('data-n'));
+      if (el._n === to) continue;
+      el._n = to;
+      F.countTo(el, to, F.motionOK() ? 900 : 0);
+    }
   }
 
   /* ---- chat: a private team channel and an everyone channel ---- */
@@ -1094,7 +1149,7 @@
       h += '<div class="fmlist" data-key="fmqs">' + d.qs.map(function (q, k) { return '<div>' + (k + 1) + '. ' + esc(q.text) + '</div>'; }).join('') + '</div>';
     } else if (fm.stage === 'run') {
       var q = d.qs[fm.cur], prev = fm.turn === 1 && d.picks[0][fm.cur] ? d.picks[0][fm.cur].i : null;
-      h += '<div class="clock" id="hClock" data-live>' + Math.ceil(fm.left / 1000) + '</div>' +
+      h += '<div class="clockrow" data-key="fmclock"><div class="clock" id="hClock" data-live>' + Math.ceil(fm.left / 1000) + '</div><span class="more"><button class="btn ghost sm" data-a="fmTime">' + ic('plus') + '5 sec</button></span></div>' +
         '<div class="hq" data-key="fmq' + fm.turn + fm.cur + '"><small>QUESTION ' + (fm.cur + 1) + ' OF 5 · ' + who + '</small><b>' + esc(q.text) + '</b></div><div class="hans" data-key="fma' + fm.turn + fm.cur + '">';
       q.answers.forEach(function (a, i) {
         h += '<button style="--i:' + i + '" data-a="fmPick" data-i="' + i + '"><i></i><span>' + esc(a.text) + (prev === i ? ' (said already)' : '') + '</span><b>' + a.pts + '</b></button>';
@@ -1103,14 +1158,18 @@
     } else {
       var shown = d.shown[fm.turn], all = shown >= 5;
       h += '<div class="prompt" data-key="fm' + fm.stage + fm.turn + '"><p><b>FAST MONEY</b> · ' + (fm.stage === 'done' ? (fm.won ? '<b>THEY WON!</b> ' : 'Not this time. ') + fm.total + ' of ' + fm.target + ' points.' : who + '’s answers. Total so far: <b>' + fm.total + '</b>') + '</p>';
-      if (fm.stage === 'reveal' && !all) h += '<button class="btn gold big" data-a="fmReveal">REVEAL ANSWER ' + (shown + 1) + '</button>';
+      var open = fm.stage === 'reveal' && shown === 0 && d.picks[fm.turn].some(function (x) { return x == null; });
+      if (fm.stage === 'reveal' && !all) h += '<p class="fmhint">Heard an answer the clock beat you to? Tap <b>Change</b> on any answer below before you reveal it.</p>' +
+        '<button class="btn gold big" data-a="fmReveal">REVEAL ANSWER ' + (shown + 1) + '</button>' +
+        (open ? '<div class="row"><button class="btn ghost sm" data-a="fmTime">' + ic('timer') + 'Put 5 seconds back on the clock</button></div>' : '');
       else if (fm.stage === 'reveal' && fm.turn === 0) h += '<button class="btn gold big" data-a="fmNextPlayer">ON TO ' + esc(p[1] ? p[1].name : 'PLAYER 2') + '</button>';
       else if (fm.stage === 'done') h += '<button class="btn gold big" data-a="again">New game, same teams</button>';
       h += '</div><div class="fmlist" data-key="fmpicks' + fm.turn + '">';
       d.qs.forEach(function (q, k) {
         var pick = d.picks[fm.turn][k];
         var txt = pick ? (pick.i >= 0 ? q.answers[pick.i].text + ' (' + q.answers[pick.i].pts + ')' : 'not on the list (0)') : 'no answer (0)';
-        h += '<div class="' + (k < shown ? 'done' : '') + '">' + (k + 1) + '. ' + esc(q.text) + '<br><b>' + esc(txt) + '</b></div>';
+        h += '<div class="row2' + (k < shown ? ' done' : '') + '"><span>' + (k + 1) + '. ' + esc(q.text) + '<br>' + (pick ? '<b>' + esc(txt) + '</b>' : '<em>' + esc(txt) + '</em>') + '</span>' +
+          (fm.stage === 'reveal' && k >= shown ? '<button class="chg" data-a="fmChange" data-q="' + k + '">Change</button>' : '') + '</div>';
       });
       h += '</div>';
     }
@@ -1137,10 +1196,45 @@
     else if (a === 'fmClock') H('fmClock');
     else if (a === 'fmPick') H('fmPick', { i: Number(b.dataset.i) });
     else if (a === 'fmPass') H('fmPass');
+    else if (a === 'fmTime') H('fmTime');
+    else if (a === 'fmChange') openFmPick(Number(b.dataset.q));
     else if (a === 'fmReveal') H('fmReveal');
     else if (a === 'fmNextPlayer') H('fmNextPlayer');
     else if (a === 'again') { if (confirm('Go back to the lobby for a new game? Scores reset, teams stay.')) H('endGame'); }
   });
+
+  /* ---- fast money: pick the answer a player really gave, after the clock ---- */
+  var fmPickQ = null;
+  function openFmPick(q) {
+    closeFmPick(true);
+    fmPickQ = q;
+    var m = document.createElement('div');
+    m.className = 'menu-back'; m.id = 'fmPick';
+    document.body.appendChild(m);
+    m.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-a]');
+      if (!b || b.disabled) return;
+      if (b.dataset.a === 'fmSet') H('fmEdit', { q: fmPickQ, i: b.dataset.i === 'none' ? null : Number(b.dataset.i) });
+      closeFmPick();
+    });
+    renderFmPick();
+  }
+  function closeFmPick(now) { fmPickQ = null; sheetAway($('#fmPick'), now); }
+  function renderFmPick() {
+    var m = $('#fmPick'), g = S && S.game, fm = g && g.fm, d = S && S.hostView && S.hostView.fm;
+    if (!m) return;
+    if (!fm || !d || !me.isHost || S.phase !== 'fm' || fm.stage !== 'reveal' || fmPickQ == null || fmPickQ < d.shown[fm.turn]) { closeFmPick(); return; }
+    var q = d.qs[fmPickQ], pick = d.picks[fm.turn][fmPickQ], prev = fm.turn === 1 && d.picks[0][fmPickQ] ? d.picks[0][fmPickQ].i : null;
+    var who = fm.players[fm.turn] ? esc(fm.players[fm.turn].name) : '';
+    var h = '<div class="menu"><div class="row" style="align-items:center;margin-bottom:10px"><h2 class="t" style="text-align:left;margin:0">Change answer</h2><button class="btn sm" data-a="close" style="flex:none;width:90px">Cancel</button></div>' +
+      '<div class="pickq"><small>QUESTION ' + (fmPickQ + 1) + ' OF 5 · ' + who + '</small>' + esc(q.text) + '</div><div class="hans">';
+    q.answers.forEach(function (a, i) {
+      var said = prev === i;
+      h += '<button style="--i:' + i + '" data-a="fmSet" data-i="' + i + '" class="' + (pick && pick.i === i ? 'cur' : '') + (said ? ' said' : '') + '"' + (said ? ' disabled' : '') + '><i></i><span>' + esc(a.text) + (said ? ' (said already)' : '') + '</span><b>' + a.pts + '</b></button>';
+    });
+    h += '</div><div class="row"><button class="btn red" data-a="fmSet" data-i="-1">NOT ON THE LIST</button><button class="btn ghost" data-a="fmSet" data-i="none">No answer</button></div></div>';
+    F.morph(m, h);
+  }
 
   /* ------------------------------------------------------------- menu */
   function openMenu() {

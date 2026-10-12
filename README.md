@@ -46,6 +46,14 @@ host and runs the board from their phone.
   decides whether it costs a strike.
 - **Chat**: players have a private team chat and an everyone chat. The host
   can read and post in the everyone chat.
+- **Fast Money, more time**: `+5 sec` beside the host's clock adds five seconds
+  per tap. If the clock runs out with a question unanswered, the host can put
+  five seconds back on, as long as nothing has been revealed yet.
+- **Fast Money, fix an answer**: once the clock stops, every answer not yet
+  revealed has a Change button, for the answer that came in at the buzzer.
+- **Awards**: when the game ends the TV shows MVP, fastest buzzer and most
+  strikes, and again on the closing screen after Fast Money. Each phone shows
+  that player's own numbers.
 
 - **Undo last tap** fixes any mis-tap.
 - **Menu** lets you fix a score, move or remove players, or end the game.

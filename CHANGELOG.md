@@ -8,7 +8,32 @@ Times are Pacific. The code in brackets is the GitHub commit for that change: on
 **Commits** and click it to see exactly which lines changed, or to get the game back to how it
 was at that point.
 
-## 1.5.1 · October 11, 2026, 8:30 pm
+## 1.6 · October 11, 2026, 9:25 pm
+
+**Fast Money: tools for the host**
+- **Change an answer after the buzzer.** When the clock stops, every answer that hasn't been
+  revealed yet has a **Change** button on the host's phone. Tap it to fill in an answer the clock
+  beat you to, swap a wrong tap for the right one, mark it "not on the list", or clear it. Once an
+  answer has been revealed on the TV it is locked (Undo still works). Player two still can't be
+  given an answer player one already said.
+- **Put time back on the clock.** **+5 sec** sits beside the host's clock while it runs and adds
+  five seconds per tap. If the clock runs out with a question still unanswered, and nothing has
+  been revealed yet, **Put 5 seconds back on the clock** restarts it on the first unanswered
+  question.
+
+**Awards and stats**
+- Fixed: the awards never appeared for anyone whose TV page had been open since before the update.
+  A page that stays open keeps running the old version of the game, even after "Start a new game".
+  Every screen now checks which version is current whenever it connects, and reloads itself if it
+  is out of date, so this can't happen again.
+- With Fast Money on, the awards used to show only on the winner screen, for the few seconds
+  before Fast Money started. They still show there, and now the TV also ends the night on a
+  closing screen: the winners, the final score, the Fast Money result and the awards.
+- Each phone now shows **that player's own game**, not a copy of the TV: answers on the board,
+  points added, strikes and best buzz time, with a badge for any award they won. It shows on the
+  winner screen and again after Fast Money.
+
+## 1.5.1 · October 11, 2026, 8:30 pm  [ba1bb39]
 
 - The TV's music is now a real recording: **"Private Eye" by Kevin MacLeod** (incompetech.com),
   used under the Creative Commons Attribution 3.0 licence. It plays in the lobby and on the winner

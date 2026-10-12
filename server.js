@@ -28,7 +28,19 @@ const MIME = {
   '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.json': 'application/json', '.mp3': 'audio/mpeg'
 };
 
+// A fingerprint of the pages as they are right now. Every page is told which build it is, and can
+// ask for the current one, so a screen left open across an update reloads itself.
+const BUILD = (() => {
+  const h = crypto.createHash('sha1');
+  for (const f of ['index.html', 'tv.html', 'common.js', 'editor.js', 'style.css']) {
+    try { h.update(fs.readFileSync(path.join(PUB, f))); } catch (e) { /* missing file: nothing to add */ }
+  }
+  return h.digest('hex').slice(0, 12);
+})();
+
 const FM_TARGET = 200;
+const FM_MORE_MS = 5000;               // what one tap of "+5 seconds" adds
+const FM_MAX_MS = 60000;               // the clock never holds more than this
 const FM_SECONDS = [20, 25];
 const MAX_PLAYERS = 40;
 const MAX_ROUNDS = 15;
@@ -43,6 +55,7 @@ const server = http.createServer((req, res) => {
   try { u = new URL(req.url, 'http://localhost'); } catch (e) { res.writeHead(400); return res.end(); }
   let p = decodeURIComponent(u.pathname);
   if (p === '/health') { res.writeHead(200, { 'content-type': 'text/plain' }); return res.end('ok'); }
+  if (p === '/version') { res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store' }); return res.end(BUILD); }
   if (p === '/qr.svg') {
     const text = (u.searchParams.get('u') || '').slice(0, 300);
     return QRCode.toString(text || ' ', { type: 'svg', margin: 1, errorCorrectionLevel: 'L' }, (err, svg) => {
@@ -59,6 +72,7 @@ const server = http.createServer((req, res) => {
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('Not found'); }
     const ext = path.extname(file);
+    if (ext === '.html') data = Buffer.from(String(data).replace('<html lang="en">', '<html lang="en" data-build="' + BUILD + '">'));
     res.writeHead(200, {
       'content-type': MIME[ext] || 'application/octet-stream',
       'cache-control': ext === '.woff2' ? 'public, max-age=604800' : ext === '.mp3' ? 'public, max-age=3600' : 'no-cache'
@@ -287,21 +301,26 @@ function stat(room, id) {
   return g.stats[id] || (g.stats[id] = { answers: 0, points: 0, tops: 0, strikes: 0, buzzes: 0, fastest: null });
 }
 
+// The game proper is over: the winner is known, and Fast Money (if it's being played) is finished.
+function gameDone(g) {
+  return !!g && (g.phase === 'gameOver' || (g.phase === 'fm' && !!g.fm && g.fm.stage === 'done'));
+}
+
 // Who gets a mention on the winner screen. Anyone who has left the room is skipped.
 function awards(room) {
   const g = room.game;
   const rows = Object.keys(g.stats || {}).map(id => {
     const p = room.players.get(id);
-    return p && p.team != null ? { name: p.name, team: p.team, s: g.stats[id] } : null;
+    return p && p.team != null ? { id, name: p.name, team: p.team, s: g.stats[id] } : null;
   }).filter(Boolean);
   const out = [];
   const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
   const mvp = rows.filter(r => r.s.answers > 0).sort((a, b) => b.s.answers - a.s.answers || b.s.points - a.s.points)[0];
-  if (mvp) out.push({ key: 'mvp', title: 'MVP', name: mvp.name, team: mvp.team, note: plural(mvp.s.answers, 'answer') + ' · ' + plural(mvp.s.points, 'point') });
+  if (mvp) out.push({ key: 'mvp', title: 'MVP', id: mvp.id, name: mvp.name, team: mvp.team, note: plural(mvp.s.answers, 'answer') + ' · ' + plural(mvp.s.points, 'point') });
   const fast = rows.filter(r => r.s.fastest != null).sort((a, b) => a.s.fastest - b.s.fastest)[0];
-  if (fast) out.push({ key: 'fast', title: 'FASTEST BUZZER', name: fast.name, team: fast.team, note: (fast.s.fastest / 1000).toFixed(2) + ' seconds' });
+  if (fast) out.push({ key: 'fast', title: 'FASTEST BUZZER', id: fast.id, name: fast.name, team: fast.team, note: (fast.s.fastest / 1000).toFixed(2) + ' seconds' });
   const miss = rows.filter(r => r.s.strikes > 0).sort((a, b) => b.s.strikes - a.s.strikes || a.s.answers - b.s.answers)[0];
-  if (miss) out.push({ key: 'miss', title: 'MOST STRIKES', name: miss.name, team: miss.team, note: plural(miss.s.strikes, 'strike') });
+  if (miss) out.push({ key: 'miss', title: 'MOST STRIKES', id: miss.id, name: miss.name, team: miss.team, note: plural(miss.s.strikes, 'strike') });
   return out;
 }
 
@@ -537,6 +556,33 @@ function fmAction(room, a, m) {
     fx(room, 'fmLock', { q });
     const nx = fmNextOpen(fm, q);
     if (nx < 0) fmEndRun(room, false); else fm.cur = nx;
+  } else if (a === 'fmTime') {
+    // "+5 seconds": tops up a running clock, or restarts one that has just run out, as long as
+    // nothing has been revealed and there is still a question without an answer.
+    if (fm.stage === 'run' && fm.endsAt) {
+      snapshot(room);
+      fm.endsAt = Math.min(fm.endsAt + FM_MORE_MS, Date.now() + FM_MAX_MS);
+      fmArmTimer(room);
+      fx(room, 'fmMore');
+    } else if (fm.stage === 'reveal' && fm.shown[fm.turn] === 0 && fm.picks[fm.turn].some(x => x == null)) {
+      snapshot(room);
+      fm.stage = 'run';
+      fm.cur = fm.picks[fm.turn].findIndex(x => x == null);
+      fm.endsAt = Date.now() + FM_MORE_MS;
+      fmArmTimer(room);
+      fx(room, 'fmMore');
+    }
+  } else if (a === 'fmEdit' && fm.stage === 'reveal') {
+    // The host heard an answer the clock beat them to: set or change any answer not yet revealed.
+    const q = m.q, i = m.i;
+    if (!Number.isInteger(q) || q < fm.shown[fm.turn] || q > 4) return;
+    if (i !== null && (!Number.isInteger(i) || i < -1 || i >= fm.qs[q].answers.length)) return;
+    if (fm.turn === 1 && i != null && i >= 0 && fm.picks[0][q] && fm.picks[0][q].i === i) {
+      return fx(room, 'fmDup', { q });         // player one already said it
+    }
+    snapshot(room);
+    fm.picks[fm.turn][q] = i === null ? null : { i };
+    fx(room, 'fmLock', { q });
   } else if (a === 'fmPass' && fm.stage === 'run') {
     const nx = fmNextOpen(fm, fm.cur);
     if (nx >= 0 && nx !== fm.cur) { fm.cur = nx; }
@@ -694,7 +740,7 @@ function hostAction(room, m) {
       }
       break;
     case 'fmStart': fmStart(room, m.pids); break;
-    case 'fmClock': case 'fmPick': case 'fmPass': case 'fmReveal': case 'fmNextPlayer':
+    case 'fmClock': case 'fmPick': case 'fmPass': case 'fmReveal': case 'fmNextPlayer': case 'fmTime': case 'fmEdit':
       fmAction(room, a, m); break;
     case 'endGame':                    // back to the lobby, teams stay
       clearFmTimer(room);
@@ -741,7 +787,7 @@ function publicState(room) {
       answerer: ans ? pl(ans) : null,
       roundWinner: g.roundWinner, awarded: g.awarded, stolen: g.stolen,
       winner: g.winner, fm: null,
-      awards: g.phase === 'gameOver' ? awards(room) : null
+      awards: gameDone(g) ? awards(room) : null
     };
     if (g.fm) {
       const fm = g.fm;
@@ -788,6 +834,11 @@ function stateFor(room, pub, p) {
   if (p.team != null) s.chat = room.chat[p.team];
   if (p.team != null || p.isHost) s.chatAll = room.chatAll;
   if (p.isHost) s.hostView = hostExtras(room);
+  if (g && pub.game && gameDone(g) && p.team != null) {       // a player's own record, for their own phone
+    const st = (g.stats && g.stats[p.id]) || {};
+    s.me.stats = { answers: st.answers || 0, points: st.points || 0, tops: st.tops || 0, strikes: st.strikes || 0, buzzes: st.buzzes || 0, fastest: st.fastest == null ? null : st.fastest };
+    s.me.awards = (pub.game.awards || []).filter(a => a.id === p.id).map(a => a.key);
+  }
   if (g && pub.game) {
     const pids = pub.game.fo.pids;
     s.me.faceoff = (g.phase === 'question' || g.phase === 'faceoff') && pids.includes(p.id) && g.fo.buzzed == null;
