@@ -72,6 +72,8 @@
   @keyframes badgeIn { from { opacity: 0; transform: rotate(-14deg) scale(.5); } }
   #start p, #start .row { animation: riseIn .5s ease-out .25s backwards; }
   #start p { font-size: 32px; color: #cfdcff; margin: 0; text-align: center; line-height: 1.4; }
+  #ver { position: absolute; left: 0; right: 0; bottom: 26px; text-align: center; font: 700 20px var(--text); color: #7f90d6; letter-spacing: .06em; }
+  .chip.lit { border-color: var(--gold); color: #fff; background: #1b2b80; }
   #start .row { display: flex; gap: 30px; }
   #startMsg { color: #ffb4ae !important; min-height: 44px; }
   #startMsg.calm { color: #cfdcff !important; animation: fadeIn .4s; }
@@ -196,7 +198,23 @@
   #winner.on h2:first-child { animation: riseIn .5s ease-out .3s backwards; }
   #winner.on h1 { animation: winIn .8s cubic-bezier(.2, 1.4, .4, 1) .7s backwards; }
   #winner.on #winScore { animation: riseIn .5s ease-out 1.5s backwards; }
-  #winner.on p { animation: fadeIn .6s ease-out 2.1s backwards; }
+  #winner.on p { animation: fadeIn .6s ease-out 3.6s backwards; }
+  /* awards under the winner: three cards that drop in one after another */
+  #winAwards { display: flex; gap: 34px; justify-content: center; margin-top: 6px; }
+  #winAwards:empty { display: none; }
+  #winAwards .aw { width: 430px; padding: 18px 24px 16px; box-sizing: border-box; border-radius: 22px; text-align: center; background: linear-gradient(#0b1c6b, #050d3d);
+    box-shadow: 0 0 0 4px var(--gold), 0 0 0 8px #6b3d00, 0 16px 40px #000a; animation: awIn .6s cubic-bezier(.2, 1.4, .4, 1) 2.2s backwards; }
+  #winAwards .aw:nth-child(2) { animation-delay: 2.55s; }
+  #winAwards .aw:nth-child(3) { animation-delay: 2.9s; }
+  @keyframes awIn { from { opacity: 0; transform: translateY(60px) scale(.7); } }
+  #winAwards small { display: block; font: 400 30px/1.1 var(--display); letter-spacing: .12em; color: var(--gold); }
+  #winAwards b { display: block; font: 400 62px/1.15 var(--display); letter-spacing: .03em; white-space: nowrap; overflow: hidden; padding-top: 4px; }
+  #winAwards span { display: block; font: 700 26px/1.2 var(--text); color: #fff; white-space: nowrap; }
+  #winAwards i { display: block; margin-top: 3px; font: 700 21px/1.2 var(--text); font-style: normal; letter-spacing: .05em; color: #9fb0ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #winAwards .aw.miss { box-shadow: 0 0 0 4px var(--red), 0 0 0 8px #5a0a07, 0 16px 40px #000a; }
+  #winAwards .aw.miss small { color: #ff8a80; }
+  #winner.awards { gap: 18px; }
+  #winner.awards h1 { font-size: 170px; }
   @keyframes winIn { from { opacity: 0; transform: scale(.2) rotate(-6deg); } }
   #winner h1 { font: 400 200px/1.05 var(--display); margin: 0; color: var(--gold); text-shadow: 0 8px 0 #5a3200, 0 0 80px #ffd24a88; width: 1760px; white-space: nowrap; overflow: hidden; }
   #winner h2 { font: 400 70px var(--display); margin: 0; letter-spacing: .05em; }
@@ -266,6 +284,7 @@
       </div>
       <p id="startMsg"></p>
     </div>
+    <div id="ver"></div>
   </section>
 
   <section class="screen" id="lobby">
@@ -283,6 +302,7 @@
     <div class="hostline box" id="hostLine"></div>
     <div class="foot">
       <div class="grow" id="lobbyNote"></div>
+      <button class="chip" data-music>Music: off</button>
       <button class="chip" id="btnQuestions">My questions</button>
     </div>
   </section>
@@ -296,7 +316,7 @@
     <div class="side right" id="side1"><div class="tname" id="t1n"></div><div class="tscore box"><div id="t1s">0</div></div><div class="xs" id="t1x"></div><div class="roster" id="t1r"></div></div>
     <div id="question"></div>
     <div id="status"></div>
-    <div id="winner"><h2 id="winSub"></h2><h1 id="winName"></h1><h2 id="winScore"></h2><p id="winNext"></p></div>
+    <div id="winner"><h2 id="winSub"></h2><h1 id="winName"></h1><h2 id="winScore"></h2><div id="winAwards"></div><p id="winNext"></p></div>
   </section>
 
   <section class="screen" id="fm">
@@ -315,6 +335,7 @@
   <div id="offline">Reconnecting…</div>
   <div id="tools">
     <button class="chip" id="btnSound">Sound: on</button>
+    <button class="chip" data-music>Music: off</button>
     <button class="chip" id="btnFull">Full screen</button>
     <button class="chip" id="btnQuit">New room</button>
   </div>
@@ -334,6 +355,7 @@
 
   document.querySelectorAll('[data-title]').forEach(function (n) { n.textContent = F.TITLE; });
   document.title = F.TITLE + ' — Scoreboard';
+  $('#ver').textContent = 'VERSION ' + F.VERSION;
 
   function scale() {
     stage.style.setProperty('--s', Math.min(innerWidth / 1920, innerHeight / 1080));
@@ -451,7 +473,7 @@
   function intro(r) {
     var title = r.sudden ? 'SUDDEN DEATH' : 'ROUND ' + r.round;
     var sub = r.sudden ? 'WIN THE FACE-OFF, WIN THE GAME' : ['SINGLE', 'DOUBLE', 'TRIPLE'][r.mult - 1] + ' POINTS';
-    sfx.round();
+    if (F.music.isOn()) F.music.sting(); else sfx.round();
     if (!F.motionOK()) { banner(title + ' · ' + sub, 2200); return; }
     var el = $('#intro');
     el.querySelector('b').textContent = title;
@@ -459,7 +481,7 @@
     el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
     clearTimeout(introTimer);
     introTimer = setTimeout(function () { el.classList.remove('on'); }, 2500);
-    setTimeout(function () { sfx.whoosh(); }, 150);
+    if (!F.music.isOn()) setTimeout(function () { sfx.whoosh(); }, 150);
   }
   function hideIntro() { clearTimeout(introTimer); $('#intro').classList.remove('on'); }
   /* the host's optional answer timer */
@@ -492,12 +514,18 @@
     hideIntro(); stopAward();
   }
 
+  var musicLater = null;
   function render(fresh) {
     var s = S;
     var has = {};
     fresh.forEach(function (e) { has[e.type] = e; });
     if (has.undo || has.lobby) clearOverlays();
 
+    // Music plays while people are joining and again once there's a winner, never over a round.
+    clearTimeout(musicLater);
+    if (s.phase === 'lobby') F.music.scene('lobby');
+    else if (s.phase === 'gameOver') { if (has.win) { F.music.scene(null); musicLater = setTimeout(function () { F.music.scene('win'); }, 3400); } else F.music.scene('win'); }
+    else F.music.scene(null);
     if (s.phase === 'lobby') { show('lobby'); setAnswerTimer(null); stopAward(); hideIntro(); renderLobby(s); confetti(false); return; }
     if (s.phase === 'fm') { show('fm'); setAnswerTimer(null); stopAward(); hideIntro(); renderFm(s, fresh); return; }
     show('game');
@@ -622,6 +650,12 @@
       $('#winName').textContent = T(g.winner);
       $('#winScore').textContent = T(0) + ' ' + g.scores[0] + '   ·   ' + T(1) + ' ' + g.scores[1];
       $('#winNext').textContent = s.settings.fastMoney ? 'Stick around: Fast Money is next.' : '';
+      var aw = g.awards || [];
+      w.classList.toggle('awards', aw.length > 0);
+      F.morph($('#winAwards'), aw.map(function (a) {
+        return '<div class="aw ' + a.key + '" data-key="' + a.key + '"><small>' + esc(a.title) + '</small><b>' + esc(a.name) + '</b><span>' + esc(a.note) + '</span><i>' + esc(T(a.team)) + '</i></div>';
+      }).join(''));
+      document.querySelectorAll('#winAwards b').forEach(function (n) { F.fit(n); });
       F.fit($('#winName'));
       if (!w.classList.contains('on')) { w.classList.add('on'); confetti(true); }
       if (has.win) sfx.win();
@@ -791,6 +825,15 @@
     this.textContent = 'Sound: ' + (sfx.isMuted() ? 'off' : 'on');
     if (!sfx.isMuted()) sfx.ding();
   };
+  /* music: off until someone turns it on, and it stays how this TV left it */
+  function paintMusic() {
+    document.querySelectorAll('[data-music]').forEach(function (b) { b.textContent = 'Music: ' + (F.music.isOn() ? 'on' : 'off'); b.classList.toggle('lit', F.music.isOn()); });
+  }
+  F.music.set(F.store.get('feud.music', false) === true);
+  paintMusic();
+  document.querySelectorAll('[data-music]').forEach(function (b) {
+    b.onclick = function () { sfx.unlock(); F.music.set(!F.music.isOn()); F.store.set('feud.music', F.music.isOn()); paintMusic(); };
+  });
   $('#btnQuit').onclick = function () {
     if (!confirm('Leave this room and start a brand new one? Players would need to join again with a new code.')) return;
     F.store.del('feud.tv');
@@ -812,6 +855,7 @@
     if (e.target.matches('input, textarea')) return;
     if (e.key === 'f' || e.key === 'F') $('#btnFull').click();
     if (e.key === 'm' || e.key === 'M') $('#btnSound').click();
+    if (e.key === 'b' || e.key === 'B') document.querySelector('[data-music]').click();      // B for background music
   });
 })();
 </script>

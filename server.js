@@ -20,11 +20,12 @@ const PORT = process.env.PORT || 3000;
 const PUB_DIR = path.join(__dirname, 'public');
 const FLAT = !fs.existsSync(path.join(PUB_DIR, 'index.html'));
 const PUB = FLAT ? __dirname : PUB_DIR;
-const PAGE_FILES = new Set(['index.html', 'tv.html', 'common.js', 'editor.js', 'style.css', 'anton.woff2']);
+// lobby.mp3 and fanfare.mp3 are optional: add them and the TV plays them in place of the built-in music.
+const PAGE_FILES = new Set(['index.html', 'tv.html', 'common.js', 'editor.js', 'style.css', 'anton.woff2', 'lobby.mp3', 'fanfare.mp3']);
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png',
-  '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.json': 'application/json'
+  '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.json': 'application/json', '.mp3': 'audio/mpeg'
 };
 
 const FM_TARGET = 200;
@@ -60,7 +61,7 @@ const server = http.createServer((req, res) => {
     const ext = path.extname(file);
     res.writeHead(200, {
       'content-type': MIME[ext] || 'application/octet-stream',
-      'cache-control': ext === '.woff2' ? 'public, max-age=604800' : 'no-cache'
+      'cache-control': ext === '.woff2' ? 'public, max-age=604800' : ext === '.mp3' ? 'public, max-age=3600' : 'no-cache'
     });
     res.end(data);
   });
@@ -249,7 +250,8 @@ function startGame(room) {
   room.game = {
     phase: 'question', round: 1, mult: 1, sudden: false,
     rounds: room.settings.rounds,       // fixed for this game once it starts
-    scores: [0, 0], deck: [], winner: null, fm: null
+    scores: [0, 0], deck: [], winner: null, fm: null,
+    stats: {}                           // per player, for the end-of-game awards
   };
   room.game.deck = buildDeck(room);
   loadQuestion(room);
@@ -275,6 +277,32 @@ function loadQuestion(room) {
     idx: room.teams.map(t => (t.order.length ? base % t.order.length : 0)),
     open: false, buzzed: null, turn: null, tries: 0, first: null, winner: null
   };
+}
+
+// Running totals for the awards. They live inside the game, so Undo rolls them back too.
+function stat(room, id) {
+  const g = room.game;
+  if (!id) return null;
+  if (!g.stats) g.stats = {};
+  return g.stats[id] || (g.stats[id] = { answers: 0, points: 0, tops: 0, strikes: 0, buzzes: 0, fastest: null });
+}
+
+// Who gets a mention on the winner screen. Anyone who has left the room is skipped.
+function awards(room) {
+  const g = room.game;
+  const rows = Object.keys(g.stats || {}).map(id => {
+    const p = room.players.get(id);
+    return p && p.team != null ? { name: p.name, team: p.team, s: g.stats[id] } : null;
+  }).filter(Boolean);
+  const out = [];
+  const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+  const mvp = rows.filter(r => r.s.answers > 0).sort((a, b) => b.s.answers - a.s.answers || b.s.points - a.s.points)[0];
+  if (mvp) out.push({ key: 'mvp', title: 'MVP', name: mvp.name, team: mvp.team, note: plural(mvp.s.answers, 'answer') + ' · ' + plural(mvp.s.points, 'point') });
+  const fast = rows.filter(r => r.s.fastest != null).sort((a, b) => a.s.fastest - b.s.fastest)[0];
+  if (fast) out.push({ key: 'fast', title: 'FASTEST BUZZER', name: fast.name, team: fast.team, note: (fast.s.fastest / 1000).toFixed(2) + ' seconds' });
+  const miss = rows.filter(r => r.s.strikes > 0).sort((a, b) => b.s.strikes - a.s.strikes || a.s.answers - b.s.answers)[0];
+  if (miss) out.push({ key: 'miss', title: 'MOST STRIKES', name: miss.name, team: miss.team, note: plural(miss.s.strikes, 'strike') });
+  return out;
 }
 
 // Who is answering right now (player id), or null.
@@ -335,13 +363,22 @@ function faceoffAttempt(room, rank) {   // rank: answer index, or null for a mis
   }
 }
 
-function doBuzz(room, team) {
+function doBuzz(room, team, timed) {    // timed: a real press on a phone, not the host calling it
   const g = room.game;
   if (!g || g.phase !== 'faceoff' || !g.fo.open || g.fo.buzzed != null) return false;
   snapshot(room);
   g.fo.open = false;
   g.fo.buzzed = team;
   g.fo.turn = team;
+  const who = currentAnswerer(room), st = stat(room, who);
+  if (st) {
+    g.fo.buzzStat = { id: who, fastest: st.fastest };      // so a false start can be taken back off their record
+    st.buzzes++;
+    if (timed && g.fo.openedAt) {
+      const ms = Date.now() - g.fo.openedAt;
+      if (st.fastest == null || ms < st.fastest) st.fastest = ms;
+    }
+  }
   fx(room, 'buzz', { team, name: pname(room, currentAnswerer(room)) });
   return true;
 }
@@ -350,14 +387,20 @@ function doReveal(room, idx) {
   const g = room.game;
   if (!g || !g.q || !Number.isInteger(idx) || idx < 0 || idx >= g.q.answers.length || g.revealed[idx]) return;
   const a = g.q.answers[idx];
+  const credit = () => {                // the player who said it gets it on their record
+    const st = stat(room, currentAnswerer(room));
+    if (st) { st.answers++; st.points += a.pts * g.mult; if (idx === 0) st.tops++; }
+  };
   if (g.phase === 'faceoff' && g.fo.turn != null) {
     snapshot(room);
+    credit();
     g.revealed[idx] = true;
     g.bank += a.pts * g.mult;
     fx(room, 'reveal', { idx, top: idx === 0 });
     faceoffAttempt(room, idx);
   } else if (g.phase === 'play') {
     snapshot(room);
+    credit();
     g.revealed[idx] = true;
     g.bank += a.pts * g.mult;
     fx(room, 'reveal', { idx, top: idx === 0 });
@@ -379,12 +422,15 @@ function doReveal(room, idx) {
 function doMiss(room) {
   const g = room.game;
   if (!g) return;
+  const blame = () => { const st = stat(room, currentAnswerer(room)); if (st) st.strikes++; };
   if (g.phase === 'faceoff' && g.fo.turn != null) {
     snapshot(room);
+    blame();
     fx(room, 'strike', { n: 1 });
     faceoffAttempt(room, null);
   } else if (g.phase === 'play') {
     snapshot(room);
+    blame();
     g.strikes++;
     fx(room, 'strike', { n: g.strikes });
     g.turnIdx++;
@@ -594,6 +640,7 @@ function hostAction(room, m) {
         snapshot(room);
         g.phase = 'faceoff';
         g.fo.open = true;
+        g.fo.openedAt = Date.now();
         fx(room, 'question');
       }
       break;
@@ -606,7 +653,13 @@ function hostAction(room, m) {
     case 'clearBuzz':
       if (g && g.phase === 'faceoff' && g.fo.buzzed != null && g.fo.tries === 0) {
         snapshot(room);
+        if (g.fo.buzzStat && g.stats && g.stats[g.fo.buzzStat.id]) {
+          const st = g.stats[g.fo.buzzStat.id];
+          st.buzzes = Math.max(0, st.buzzes - 1); st.fastest = g.fo.buzzStat.fastest;
+        }
+        g.fo.buzzStat = null;
         g.fo.buzzed = null; g.fo.turn = null; g.fo.open = true;
+        g.fo.openedAt = Date.now();
         fx(room, 'rebuzz');
       }
       break;
@@ -687,7 +740,8 @@ function publicState(room) {
       playing: g.playing, stealTeam: g.stealTeam,
       answerer: ans ? pl(ans) : null,
       roundWinner: g.roundWinner, awarded: g.awarded, stolen: g.stolen,
-      winner: g.winner, fm: null
+      winner: g.winner, fm: null,
+      awards: g.phase === 'gameOver' ? awards(room) : null
     };
     if (g.fm) {
       const fm = g.fm;
@@ -890,7 +944,7 @@ function onMessage(ws, m) {
       break;
     }
     case 'buzz':
-      if (g && p.team != null && faceoffPlayers(room)[p.team] === p.id) doBuzz(room, p.team);
+      if (g && p.team != null && faceoffPlayers(room)[p.team] === p.id) doBuzz(room, p.team, true);
       break;
     case 'leave':
       dropPlayer(room, p, false);

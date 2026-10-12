@@ -16,24 +16,43 @@ host and runs the board from their phone.
 
 ## Rules it follows
 
-- Three rounds: single, double, triple points. Most points wins.
+- Three rounds by default: single, double, triple points. Most points wins.
+  The host can set 1 to 15 rounds; the points keep cycling single, double,
+  triple.
 - Face-off: one player from each team gets a buzzer (player 1s in round 1,
   player 2s in round 2, and so on). Top answer wins control outright; otherwise
   the other team gets one try to beat it. The winner chooses pass or play.
+  The question stays hidden on every screen until the face-off is won.
+- Boards get shorter as the points go up: 6-8 answers in single rounds, 5-7
+  in double, 4-6 in triple. Your own questions always keep every answer.
 - The playing team answers down the line. Three strikes and the other team
   gets one answer to steal the bank. Clear the board and the bank is yours.
-- A tie after round 3 goes to a sudden-death face-off.
+- A tie after the last round goes to a sudden-death face-off.
 - Fast Money (optional): two players from the winning team, 5 questions each,
   20 then 25 seconds, 200 points to win. Player two can't repeat an answer.
 
 ## Host tools
 
+- **Question packs** (in the lobby): General, Sports, Cars, Holidays, Food &
+  Drink, Movies/TV/Music, History, Animals, Kids, and an adults-only Late Night
+  pack. Switch on any mix.
+- **No repeats**: a question does not come back until every other question in
+  the packs you have on has been used, within a game and across games. The TV
+  remembers what it has shown, even after starting a new room.
+- **Team names**: the host can rename either team from the lobby or from the
+  in-game Menu. A name the host sets cannot be changed by the team.
+- **Answer timer**: optional. Tap it during a turn to start a 5, 10, 15 or 20
+  second countdown on the TV. When it runs out a buzzer sounds; the host still
+  decides whether it costs a strike.
+- **Chat**: players have a private team chat and an everyone chat. The host
+  can read and post in the everyone chat.
+
 - **Undo last tap** fixes any mis-tap.
 - **Menu** lets you fix a score, move or remove players, or end the game.
 - If someone's phone acts up during a face-off, call the buzz yourself.
 - **Write questions** (in the lobby) adds your own questions. They are used
-  first, and the 70 built-in ones fill in the rest. 40 more are reserved for
-  Fast Money.
+  first, and the built-in packs fill in the rest. 40 more questions are
+  reserved for Fast Money.
 
 ## Running it
 
@@ -63,3 +82,17 @@ party. It stays awake while a game is running.
 - Game name: `F.TITLE` at the top of `public/common.js`.
 - Built-in questions: `questions.js`.
 - Fast Money target and timers: top of `server.js`.
+
+## Music
+
+The TV has a **Music** button in the lobby (or press **B**). It is off until you turn it on.
+
+- With nothing added, it plays a built-in funk tune.
+- To use a real recording, put a file named `lobby.mp3` next to the other files. It loops in the
+  lobby and on the winner screen. An optional `fanfare.mp3` plays at the start of each round.
+- Only add music you have the right to use and share.
+
+## What changed, and when
+
+See [CHANGELOG.md](CHANGELOG.md). The version number on the TV start screen and the phone join
+screen matches the entries there.

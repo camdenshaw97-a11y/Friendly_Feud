@@ -63,6 +63,7 @@
   #joinErr:empty { display: none; }
   .fine { text-align: center; font-weight: 600; font-size: 14px; color: #b9c6f5; margin: 22px 0 0; line-height: 1.5; }
   .fine a { color: var(--gold); }
+  .ver { margin: auto 0 0; padding-top: 18px; text-align: center; font-weight: 700; font-size: 12px; letter-spacing: .06em; color: #6f80c8; }
   /* on a computer, the join page leads with a button to the scoreboard */
   #deskTv { display: none; text-align: center; margin-bottom: 24px; }
   #deskTv p { font-weight: 700; font-size: 16px; margin: 0 0 12px; color: #dfe7ff; }
@@ -353,7 +354,7 @@
   @keyframes slam { from { opacity: 0; transform: scale(2.4) rotate(-8deg); } }
   #flash i::before, #flash i::after { content: ""; position: absolute; left: 12%; right: 12%; top: 50%; height: 16%; margin-top: -8%; background: var(--red); border-radius: 3px; transform: rotate(45deg); }
   #flash i::after { transform: rotate(-45deg); }
-  #toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: #fff; color: #111; font-weight: 800; font-size: 15px; padding: 10px 18px; border-radius: 999px; z-index: 900; display: none; max-width: 90vw; text-align: center; box-shadow: 0 8px 30px #000a; }
+  #toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: #fff; color: #111; font-weight: 800; font-size: 15px; padding: 10px 18px; border-radius: 999px; z-index: 900; display: none; width: max-content; max-width: 90vw; text-align: center; box-shadow: 0 8px 30px #000a; }
   #toast.on { display: block; animation: toastIn .3s cubic-bezier(.3, 1.4, .5, 1); }
   #toast.out { animation: toastOut .2s ease-in forwards; }
   @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 16px) scale(.92); } }
@@ -400,6 +401,7 @@
       <p id="joinWait"></p>
     </form>
     <p class="fine">Tip: scan the code on the TV to skip the typing.<span class="tvhint"><br>Setting up the TV? <a href="/tv">Open the scoreboard</a> on the computer connected to it.</span></p>
+    <p class="ver" id="ver"></p>
   </div>
 </section>
 
@@ -467,6 +469,7 @@
 
   document.querySelectorAll('[data-title]').forEach(function (n) { n.textContent = F.TITLE; });
   document.title = F.TITLE;
+  $('#ver').textContent = 'VERSION ' + F.VERSION;
   F.pressFx();
 
   function show(id) {
@@ -669,6 +672,10 @@
       var r = has.round;
       pop('round', r.sudden ? 'SUDDEN DEATH' : 'ROUND ' + r.round, r.sudden ? 'Win the face-off, win the game.' : ['Single', 'Double', 'Triple'][r.mult - 1] + ' points', 1500);
     } else if (has.win && has.win.team === me.team) { pop('in', 'YOU WON!', T(me.team), 2400); buzzPhone([80, 60, 80, 60, 200]); }
+    if (has.win) {                                // a quiet word for anyone who earned an award
+      var mine = (g.awards || []).filter(function (a) { return a.name === me.name && a.team === me.team; }).map(function (a) { return { mvp: 'You’re tonight’s MVP!', fast: 'Fastest buzzer: that’s you!', miss: 'Most strikes… that’s you.' }[a.key]; });
+      if (mine.length) setTimeout(function () { toast(mine[0]); }, has.win.team === me.team ? 2800 : 900);
+    }
   }
 
   function topBar(act) {
@@ -863,7 +870,11 @@
       $('#buzzNote').textContent = live ? 'First one to buzz gets to answer.' : 'Your buzzer goes live the moment the host starts reading the question.';
     } else if (!isFm) {
       pBoard.update(g, !!has.reveal);
-      $('#pQ').textContent = g.question || ((S.phase === 'question' || S.phase === 'faceoff') ? 'Listen up: the host reads the question out loud.' : '');
+      var line = g.question || ((S.phase === 'question' || S.phase === 'faceoff') ? 'Listen up: the host reads the question out loud.' : '');
+      if (S.phase === 'gameOver' && g.awards && g.awards.length) {      // who earned a mention tonight
+        line = g.awards.map(function (a) { return { mvp: 'MVP', fast: 'Fastest buzzer', miss: 'Most strikes' }[a.key] + ': ' + a.name; }).join(' · ');
+      }
+      $('#pQ').textContent = line;
       F.morph($('#pX'), (S.phase === 'play' || S.phase === 'steal') ? xs(g.strikes) : '');
     } else renderPlayFm(g.fm);
     if (has.buzz && has.buzz.team === me.team) buzzPhone(80);
