@@ -60,6 +60,12 @@ host and runs the board from their phone.
   strikes, and again on the closing screen after Fast Money. Each phone shows
   that player's own numbers.
 
+- **If the server restarts mid-game**, nothing is lost. The scoreboard keeps a
+  sealed copy of the game and hands it back when the server returns; every
+  screen says "Reconnecting…" for a moment (about a minute on a free host) and
+  then carries on where it left off. Keep the scoreboard page open: the copy
+  lives in that browser.
+
 - **Undo last tap** fixes any mis-tap.
 - **Menu** lets you fix a score, move or remove players, or end the game.
 - If someone's phone acts up during a face-off, call the buzz yourself.
@@ -89,6 +95,14 @@ phones can join at `http://YOUR-COMPUTER-IP:3000`.
 A free Render service goes to sleep after 15 minutes with nobody on it and
 takes about a minute to wake up, so open the TV page a few minutes before the
 party. It stays awake while a game is running.
+
+A free service can also be restarted by Render at any time. A game in progress
+survives that: see "If the server restarts mid-game" under Host tools. The
+copy the scoreboard keeps is locked with a key only your server has. On Render
+the key comes from the service's own id, so there is nothing to set up. To use
+a key of your own instead, add an environment variable named `BACKUP_KEY` with
+any long random text. On other hosts the server keeps its key in a small file
+named `.backup-key` beside `server.js`.
 
 ## Changing things
 

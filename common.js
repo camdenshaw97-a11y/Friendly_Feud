@@ -6,7 +6,7 @@
   // Change this to rename the game everywhere.
   F.TITLE = 'FRIEND FEUD';
   // Shown small on the start screens. Goes up with every change; CHANGELOG.md says what each one was.
-  F.VERSION = '1.7.2';
+  F.VERSION = '1.8';
   // Shown in the TV lobby while lobby.mp3 is playing. Change it if you change the recording.
   F.MUSIC_CREDIT = 'Music: “Private Eye” by Kevin MacLeod (incompetech.com) · CC BY 3.0';
 
@@ -47,10 +47,11 @@
     function freshCheck() {
       if (!myBuild || !window.fetch) return;
       fetch('/version', { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (v) {
-        if (!v || v === myBuild) return;
+        if (!/^[0-9a-f]{12}$/.test(v) || v === myBuild) return;        // only a real build id counts (a host's "waking up" page is not one)
         var last = Number(F.store.get('feud.reloadAt', 0));
         if (Date.now() - last < 30000) return;                     // never loop
         F.store.set('feud.reloadAt', Date.now());
+        try { sessionStorage.setItem('feud.auto', '1'); } catch (e) { /* private mode */ }   // tells the page it reloaded itself
         location.reload();
       }).catch(function () { /* offline: try again next time */ });
     }

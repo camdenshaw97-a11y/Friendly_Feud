@@ -288,6 +288,8 @@
   #tools .chip { font-size: 18px; padding: 7px 16px; }
   #offline { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: #7a1512; color: #fff; font: 700 24px var(--text); padding: 8px 24px; border-radius: 999px; z-index: 40; display: none; }
   #offline.on { display: block; animation: fadeIn .3s; }
+  #soundTip { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: #0b1c6b; color: #fff; font: 700 26px var(--text); padding: 10px 30px; border-radius: 999px; z-index: 40; display: none; box-shadow: 0 0 0 3px var(--gold), 0 10px 30px #000a; white-space: nowrap; }
+  #soundTip.on { display: block; animation: fadeIn .3s; }
 </style>
 </head>
 <body>
@@ -355,6 +357,7 @@
   <div id="banner"><div></div></div>
   <div id="keyAsk"><div class="box"><small>KEYBOARD BUZZERS</small><b></b><span></span></div></div>
   <div id="offline">Reconnecting…</div>
+  <div id="soundTip">The game just updated itself. Click or press any key to turn the sound back on.</div>
   <div id="tools">
     <button class="chip" id="btnSound">Sound: on</button>
     <button class="chip" data-music>Music: off</button>
@@ -371,6 +374,12 @@
   var F = window.Feud, $ = F.$, esc = F.esc, sfx = F.sfx;
   var stage = $('#stage');
   var room = F.store.get('feud.tv', null);       // { code, token }
+  // The server's sealed copy of this room. If the server restarts and forgets the game, this screen
+  // hands the copy back and play carries on. Only the server can open it.
+  var backup = F.store.get('feud.backup', null);  // { code, blob, got }
+  var triedRestore = false, downAt = 0;           // downAt: when this screen lost the server
+  var waitTimer = null, expecting = false;        // expecting: this page reloaded itself in the middle of a game
+  function stopWaiting() { clearTimeout(waitTimer); waitTimer = null; $('#offline').textContent = 'Reconnecting…'; }
   var S = null, lastSeq = null, hello = null, conn = null;
   var admin = false;                              // true on the screen that started the room: its keyboard can buzz
   var board = F.Board($('#board'));
@@ -424,7 +433,11 @@
       conn = F.connect({
         hello: function () { return hello; },
         onMessage: onMessage,
-        onStatus: function (ok) { $('#offline').classList.toggle('on', !ok && !!S); }
+        onStatus: function (ok) {
+          if (ok) triedRestore = false;                 // each new connection may hand the copy back once
+          else if (!downAt) downAt = Date.now();
+          $('#offline').classList.toggle('on', !ok && !!S);
+        }
       });
     } else conn.send(hello);
   }
@@ -433,17 +446,53 @@
     begin({ t: 'create', used: F.store.get('feud.used', []), custom: F.savedQuestions() });
   };
   $('#btnResume').onclick = function () { busy(this); begin({ t: 'watch', code: room.code, token: room.token }); };
+  // If this page reloaded itself to pick up an update, go straight back to the game it was showing.
+  var selfReload = false;
+  try { selfReload = sessionStorage.getItem('feud.auto') === '1'; sessionStorage.removeItem('feud.auto'); } catch (e) { /* private mode */ }
+  if (selfReload && room && (room.token || urlCode)) {
+    expecting = true;
+    $('#btnResume').click();
+    // A page that reloads itself hasn't been clicked yet, and browsers keep such pages silent.
+    setTimeout(function () {
+      var c = sfx.ctx();
+      if (!c || c.state !== 'suspended') return;
+      var tip = $('#soundTip');
+      tip.classList.add('on');
+      var wake = function () { sfx.unlock(); tip.classList.remove('on'); removeEventListener('pointerdown', wake, true); removeEventListener('keydown', wake, true); };
+      addEventListener('pointerdown', wake, true); addEventListener('keydown', wake, true);
+    }, 1200);
+  }
 
   function onMessage(m) {
-    if (m.t === 'watching') admin = !!m.admin;
-    else if (m.t === 'created') {
+    if (m.t === 'watching') { admin = !!m.admin; triedRestore = false; downAt = 0; expecting = false; stopWaiting(); $('#offline').classList.remove('on'); }
+    else if (m.t === 'backup') {
+      backup = { code: m.code, blob: m.blob, got: Date.now() };
+      F.store.set('feud.backup', backup);
+    } else if (m.t === 'created') {
       admin = true;
       room = { code: m.code, token: m.token };
       F.store.set('feud.tv', room);
+      backup = null; F.store.del('feud.backup');
       hello = { t: 'watch', code: room.code, token: room.token };
     } else if (m.t === 'error') {
       if (m.code === 'noroom') {
-        F.store.del('feud.tv'); room = null; S = null; hello = null;
+        // The server has forgotten this game (it restarted). Hand back our copy, once.
+        if (room && room.token && backup && backup.code === room.code && !triedRestore && conn) {
+          // "idle": how long the copy had been sitting here when the server went away, so a running clock comes back right
+          triedRestore = conn.send({ t: 'restore', code: room.code, token: room.token, blob: backup.blob, idle: downAt && backup.got ? Math.max(0, downAt - backup.got) : 0 });
+          return;
+        }
+        // No copy here (a second screen), but the server has only just started: the screen that
+        // does hold the copy is probably about to bring the game back. Keep asking.
+        if (m.wait && room && (S || expecting) && !triedRestore) {
+          var pill = $('#offline');
+          pill.textContent = 'Hang tight. Bringing the game back…'; pill.classList.add('on');
+          clearTimeout(waitTimer);
+          waitTimer = setTimeout(function () { if (conn && hello) conn.send(hello); }, 2500);
+          return;
+        }
+        stopWaiting(); $('#offline').classList.remove('on'); expecting = false;
+        F.store.del('feud.tv'); F.store.del('feud.backup'); backup = null; room = null; S = null; hello = null;
         busy(null); stopAward(); hideIntro(); hideWinner();
         $('#btnResume').style.display = 'none';
         $('#startMsg').textContent = m.msg;
@@ -545,6 +594,7 @@
     var has = {};
     fresh.forEach(function (e) { has[e.type] = e; });
     if (has.undo || has.lobby) clearOverlays();
+    if (has.restored) banner('WE’RE BACK! RIGHT WHERE WE LEFT OFF', 2600);
     paintKeyAsk(s, has);
 
     // Music plays while people are joining and again once there's a winner, never over a round.
@@ -941,7 +991,7 @@
   });
   $('#btnQuit').onclick = function () {
     if (!confirm('Leave this room and start a brand new one? Players would need to join again with a new code.')) return;
-    F.store.del('feud.tv');
+    F.store.del('feud.tv'); F.store.del('feud.backup');
     location.href = '/tv';
   };
   $('#btnQuestions').onclick = function () {

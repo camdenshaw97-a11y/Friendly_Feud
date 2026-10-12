@@ -9,6 +9,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const { WebSocketServer } = require('ws');
 const QRCode = require('qrcode');
 const BANK = require('./questions');
@@ -53,6 +54,34 @@ const FM_SECONDS = [20, 25];
 const MAX_PLAYERS = 40;
 const MAX_ROUNDS = 15;
 const ROOM_IDLE_MS = 6 * 60 * 60 * 1000;
+
+// Surviving a restart. Everything about a game lives in this process's memory, so a restart would
+// normally end the game. Instead the scoreboard keeps a sealed copy of its room, and hands it back
+// if it ever reconnects to a server that has forgotten it (see packRoom and restoreRoom).
+const BOOT = Date.now();
+const RESTORE_WINDOW_MS = Number(process.env.RESTORE_WINDOW_MS) || 10 * 60 * 1000;   // after starting up, how long phones are told to hang on for the scoreboard
+const RESTORE_GRACE_MS = 5000;             // extra time on a running Fast Money clock, while everyone reconnects
+const SEAT_HOLD_MS = Number(process.env.SEAT_HOLD_MS) || 30000;                // after a restore, how long a seat is kept for the phone that holds its pass
+const STRAGGLER_MS = Number(process.env.STRAGGLER_MS) || 3 * 60 * 1000;        // after a restore, when lobby players who never came back are forgotten
+const BACKUP_V = 1;                        // raise this if the shape of a saved room ever changes
+const BACKUP_DELAY_MS = 200;               // a burst of changes makes one backup, not many
+const BACKUP_MAX = 380 * 1024;             // the sealed copy has to fit in one message back to us
+// The copy is locked with a key only this server has, so the scoreboard can hold it without being
+// able to read the answers, and nobody can hand us a room we didn't make. The key has to be the
+// same after a restart: on Render that is the service's own id; elsewhere, a small file kept
+// beside this one (or set BACKUP_KEY yourself).
+const BACKUP_KEY = (() => {
+  let seed = process.env.BACKUP_KEY || process.env.RENDER_SERVICE_ID;
+  if (!seed) {
+    const file = path.join(__dirname, '.backup-key');
+    try { seed = fs.readFileSync(file, 'utf8').trim(); } catch (e) { /* first run */ }
+    if (!seed) {
+      seed = crypto.randomBytes(32).toString('hex');
+      try { fs.writeFileSync(file, seed + '\n', { mode: 0o600 }); } catch (e) { /* read-only disk: backups last until the next restart */ }
+    }
+  }
+  return crypto.createHash('sha256').update('friend-feud room backup|' + seed).digest();
+})();
 const KEY_ASK_MS = 20000;              // how long "press the key you want" waits before giving up
 
 const rooms = new Map();
@@ -65,6 +94,10 @@ const server = http.createServer((req, res) => {
   let p = decodeURIComponent(u.pathname);
   if (p === '/health') { res.writeHead(200, { 'content-type': 'text/plain' }); return res.end('ok'); }
   if (p === '/version') { res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store' }); return res.end(BUILD); }
+  if (p === '/uptime') {              // when this server last started: handy for telling whether it restarted
+    res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store' });
+    return res.end('started ' + new Date(BOOT).toISOString() + ' · up ' + Math.round((Date.now() - BOOT) / 1000) + 's');
+  }
   if (p === '/qr.svg') {
     const text = (u.searchParams.get('u') || '').slice(0, 300);
     return QRCode.toString(text || ' ', { type: 'svg', margin: 1, errorCorrectionLevel: 'L' }, (err, svg) => {
@@ -228,6 +261,94 @@ function removeFromTeams(room, id) {
     const i = t.order.indexOf(id);
     if (i >= 0) t.order.splice(i, 1);
   }
+}
+
+/* ---------------------------------------------------- surviving a restart */
+
+// Everything needed to rebuild a room, squeezed and sealed. `lean` leaves out the Undo history.
+function packRoom(room, lean) {
+  const data = {
+    v: BACKUP_V, at: Date.now(), code: room.code, adminToken: room.adminToken,
+    players: [...room.players.values()].map(p => ({ id: p.id, token: p.token, name: p.name, team: p.team, isHost: p.isHost })),
+    teams: room.teams, hostId: room.hostId, settings: room.settings, custom: room.custom, used: [...room.used],
+    chat: room.chat, chatAll: room.chatAll, chatSeq: room.chatSeq, chatEpoch: room.chatEpoch,
+    game: room.game, history: lean ? [] : room.history, fxSeq: room.fxSeq
+  };
+  const iv = crypto.randomBytes(12);
+  const c = crypto.createCipheriv('aes-256-gcm', BACKUP_KEY, iv);
+  const body = Buffer.concat([c.update(zlib.deflateRawSync(JSON.stringify(data))), c.final()]);
+  return Buffer.concat([iv, c.getAuthTag(), body]).toString('base64');
+}
+
+// Throws unless the copy was sealed by this server's key and is untouched.
+function unpackRoom(blob) {
+  const raw = Buffer.from(String(blob), 'base64');
+  if (raw.length < 30) throw new Error('too short');
+  const d = crypto.createDecipheriv('aes-256-gcm', BACKUP_KEY, raw.subarray(0, 12), { authTagLength: 16 });
+  d.setAuthTag(raw.subarray(12, 28));
+  const body = Buffer.concat([d.update(raw.subarray(28)), d.final()]);
+  return JSON.parse(zlib.inflateRawSync(body, { maxOutputLength: 16 * 1024 * 1024 }));
+}
+
+function sendBackup(room) {
+  if (rooms.get(room.code) !== room) return;
+  const to = [...room.displays].filter(ws => ws.admin && ws.readyState === 1);   // only the screen that started the room
+  if (!to.length) return;
+  let blob;
+  try {
+    blob = packRoom(room, false);
+    if (blob.length > BACKUP_MAX) blob = packRoom(room, true);      // a very long game: keep the game, drop Undo
+  } catch (e) { return console.error('backup error', e); }
+  if (blob.length > BACKUP_MAX) return;
+  const msg = JSON.stringify({ t: 'backup', code: room.code, blob });
+  for (const ws of to) ws.send(msg);
+}
+
+function queueBackup(room) {
+  if (room.backupTimer) return;
+  room.backupTimer = setTimeout(() => { room.backupTimer = null; sendBackup(room); }, BACKUP_DELAY_MS);
+}
+
+// Rebuilds a room from the scoreboard's copy. Returns the room, or null if the copy is no good.
+// `idle` is how long the scoreboard says passed between receiving the copy and losing the server:
+// time a running clock had already used up.
+function restoreRoom(blob, code, token, idle) {
+  let d;
+  try { d = unpackRoom(blob); } catch (e) { return null; }
+  if (!d || d.v !== BACKUP_V || d.code !== code || !token || d.adminToken !== token) return null;
+  if (!(Date.now() - d.at < ROOM_IDLE_MS) || rooms.has(code)) return null;
+  const room = {
+    code, adminToken: d.adminToken, touched: Date.now(), displays: new Set(), players: new Map(),
+    teams: d.teams, hostId: d.hostId, settings: d.settings, custom: d.custom, used: new Set(d.used),
+    chat: d.chat, chatAll: d.chatAll, chatSeq: d.chatSeq, chatEpoch: d.chatEpoch,
+    answerTimer: null, keyAsk: null, game: d.game, history: d.history || [],
+    fx: [], fxSeq: (d.fxSeq || 0) + 50,   // start well past anything a screen has already played
+    fmTimer: null
+  };
+  // Nobody is connected yet: every phone walks back in with the pass it already holds.
+  // For a moment each seat is kept for the phone holding its pass, so nobody can take one by typing the name.
+  const hold = Date.now() + SEAT_HOLD_MS;
+  for (const p of d.players) room.players.set(p.id, { id: p.id, token: p.token, name: p.name, team: p.team, isHost: p.isHost, connected: false, ws: null, hold });
+  const g = room.game, running = g && g.fm && g.fm.stage === 'run' && g.fm.endsAt;
+  if (g && g.fo && g.fo.open) g.fo.openedAt = Date.now();          // buzz times shouldn't include the outage
+  if (running) {                                                   // the clock stood still while the server was away
+    const used = Math.max(0, Math.min(Number(idle) || 0, 10 * 60 * 1000));
+    g.fm.endsAt = Date.now() + Math.min(FM_MAX_MS, Math.max(0, g.fm.endsAt - d.at - used) + RESTORE_GRACE_MS);
+  }
+  try { publicState(room); hostExtras(room); } catch (e) { console.error('restore error', e); return null; }
+  rooms.set(code, room);
+  if (running) fmArmTimer(room);
+  // Someone who was in the lobby without a team and never comes back would otherwise be listed forever.
+  room.tidyTimer = setTimeout(() => {
+    room.tidyTimer = null;
+    if (rooms.get(code) !== room || room.game) return;
+    let gone = 0;
+    for (const p of [...room.players.values()]) if (!p.connected && p.team == null && !p.isHost) { room.players.delete(p.id); gone++; }
+    if (gone) pushAll(room);
+  }, STRAGGLER_MS);
+  fx(room, 'restored');
+  console.log('restored room ' + code + ' (' + room.players.size + ' players, ' + (g ? g.phase : 'lobby') + ')');
+  return room;
 }
 
 /* ------------------------------------------------------------- questions */
@@ -969,6 +1090,7 @@ function pushAll(room) {
   for (const p of room.players.values()) {
     if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify({ t: 'state', s: stateFor(room, pub, p) }));
   }
+  queueBackup(room);
 }
 
 /* -------------------------------------------------------------- messages */
@@ -989,8 +1111,17 @@ function attach(ws, room, p) {
     p.ws.room = null; p.ws.pid = null;
     try { p.ws.close(); } catch (e) { /* ignore */ }
   }
-  p.ws = ws; p.connected = true;
+  p.ws = ws; p.connected = true; p.hold = 0;
   ws.room = room; ws.pid = p.id;
+}
+
+const justStarted = () => Date.now() - BOOT < RESTORE_WINDOW_MS;
+
+// Makes this connection a scoreboard of `room`, and of no other room.
+function showOn(ws, room, admin) {
+  if (ws.display && ws.room && ws.room !== room) ws.room.displays.delete(ws);
+  ws.room = room; ws.display = true; ws.admin = admin;
+  room.displays.add(ws);
 }
 
 function onMessage(ws, m) {
@@ -1001,29 +1132,35 @@ function onMessage(ws, m) {
     const room = newRoom();
     if (Array.isArray(m.used)) for (const id of m.used.slice(-3000)) if (typeof id === 'string' && id) room.used.add(id.slice(0, 160));
     room.custom = cleanCustom(m.custom);
-    ws.room = room; ws.display = true; ws.admin = true;
-    room.displays.add(ws);
+    showOn(ws, room, true);
     send(ws, { t: 'created', code: room.code, token: room.adminToken });
     return pushAll(room);
   }
 
-  if (m.t === 'watch') {
-    const room = rooms.get(clean(m.code, 4).toUpperCase());
-    if (!room) return send(ws, { t: 'error', code: 'noroom', msg: 'That game is no longer running.' });
-    ws.room = room; ws.display = true; ws.admin = m.token === room.adminToken;
-    room.displays.add(ws);
-    send(ws, { t: 'watching', code: room.code, admin: ws.admin });
+  if (m.t === 'watch' || m.t === 'restore') {
+    const code = clean(m.code, 4).toUpperCase();
+    let room = rooms.get(code), restored = false;
+    // The scoreboard is handing back its copy of a room this server no longer has.
+    if (!room && m.t === 'restore' && typeof m.blob === 'string' && m.blob.length <= BACKUP_MAX) {
+      room = restoreRoom(m.blob, code, m.token, m.idle);
+      restored = !!room;
+    }
+    if (!room) return send(ws, { t: 'error', code: 'noroom', msg: 'That game is no longer running.', wait: m.t === 'watch' && justStarted() });
+    showOn(ws, room, m.token === room.adminToken);
+    send(ws, { t: 'watching', code: room.code, admin: ws.admin, restored });
     return pushAll(room);
   }
 
   if (m.t === 'join') {
     const room = rooms.get(clean(m.code, 4).toUpperCase());
-    if (!room) return send(ws, { t: 'error', code: 'noroom', msg: "Can't find that room. Check the 4-letter code on the TV." });
+    // "wait" only means something to a phone that was already in this room (see rejoin, below).
+    if (!room) return send(ws, { t: 'error', code: 'noroom', msg: "Can't find that room. Check the 4-letter code on the TV.", wait: justStarted() });
     const name = clean(m.name, 12).toUpperCase();
     if (!name) return send(ws, { t: 'error', msg: 'Enter your name.' });
     let p = [...room.players.values()].find(x => x.name === name);
     if (p) {
       if (p.connected) return send(ws, { t: 'error', msg: 'Someone is already playing as ' + name + '. Pick another name.' });
+      if (p.hold && Date.now() < p.hold) return send(ws, { t: 'error', msg: name + ' is still reconnecting. Try again in a few seconds, or pick another name.' });
       p.token = rid();                // same name, they dropped: let them back in
     } else {
       if (room.players.size >= MAX_PLAYERS) return send(ws, { t: 'error', msg: 'This room is full.' });
@@ -1038,7 +1175,9 @@ function onMessage(ws, m) {
   if (m.t === 'rejoin') {
     const room = rooms.get(clean(m.code, 4).toUpperCase());
     const p = room && [...room.players.values()].find(x => x.token === m.token);
-    if (!p) return send(ws, { t: 'error', code: 'noroom', msg: 'That game has ended.' });
+    // "wait": the room is missing and this server only just started, so the scoreboard is probably
+    // about to bring the game back. Phones hold on to their seat and ask again instead of leaving.
+    if (!p) return send(ws, { t: 'error', code: 'noroom', msg: 'That game has ended.', wait: !room && justStarted() });
     attach(ws, room, p);
     send(ws, { t: 'joined', code: room.code, token: p.token, id: p.id });
     return pushAll(room);
@@ -1158,12 +1297,21 @@ setInterval(() => {
   }
   const now = Date.now();
   for (const [code, room] of rooms) {
-    if (now - room.touched > ROOM_IDLE_MS) { clearFmTimer(room); clearAnswerTimer(room); clearKeyAsk(room); rooms.delete(code); }
+    if (now - room.touched > ROOM_IDLE_MS) { clearFmTimer(room); clearAnswerTimer(room); clearKeyAsk(room); clearTimeout(room.backupTimer); clearTimeout(room.tidyTimer); rooms.delete(code); }
   }
 }, 30000);
 
 if (require.main === module) {
   server.listen(PORT, () => console.log('Feud server running on port ' + PORT));
+  // Asked to stop (an update or a restart by the host): hand every scoreboard its latest copy first.
+  let stopping = false;
+  const stop = () => {
+    if (stopping) return; stopping = true;
+    for (const room of rooms.values()) { try { clearTimeout(room.backupTimer); room.backupTimer = null; sendBackup(room); } catch (e) { /* keep going */ } }
+    setTimeout(() => process.exit(0), 400);
+  };
+  process.on('SIGTERM', stop);
+  process.on('SIGINT', stop);
 }
 
-module.exports = { server, rooms };
+module.exports = { server, rooms, packRoom, unpackRoom, restoreRoom };

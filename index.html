@@ -514,6 +514,23 @@
   var sess = F.store.get('feud.me', null);      // { code, token, name }
   var S = null, me = null, conn = null, hello = null, lastSeq = null;
   var triedRejoinByName = false, typed = false;
+  // After a server restart the scoreboard brings the game back. Until it does, a phone keeps its
+  // seat and keeps asking, rather than dropping to the join screen.
+  var waiting = false, waited = false, waitTimer = null, online = false, LIVE_MS = 15 * 60 * 1000;
+  function waitForGame() {
+    waiting = true; waited = true;
+    var bar = $('#offline');
+    bar.textContent = 'Hang tight. Bringing your game back…';
+    bar.classList.add('on');
+    clearTimeout(waitTimer);
+    waitTimer = setTimeout(function () { if (waiting && conn && hello) conn.send(hello); }, 2000);
+  }
+  function stopWaiting() {
+    if (!waiting) return;
+    waiting = false; clearTimeout(waitTimer);
+    var bar = $('#offline');
+    bar.classList.remove('on'); bar.textContent = 'Reconnecting…';
+  }
   var pBoard = F.Board($('#pBoard'));
   var menuOpen = false, menuDirty = false, editorOpen = false;
 
@@ -587,7 +604,10 @@
     typed = true;
     F.store.set('feud.name', nameIn.value.trim().toUpperCase());
     joinBusy(true);
-    start({ t: 'join', code: codeIn.value, name: nameIn.value.trim() });
+    var nm = nameIn.value.trim();
+    // Still holding the pass for this very game (the page was refreshed, say)? Use it: the seat is ours.
+    if (sess && sess.token && sess.code === codeIn.value && sess.name === nm.toUpperCase()) { triedRejoinByName = false; start({ t: 'rejoin', code: sess.code, token: sess.token }); }
+    else start({ t: 'join', code: codeIn.value, name: nm });
   });
   /* PLAY shows that it's working, and explains itself if the server is slow to wake up */
   var busyTimer;
@@ -609,12 +629,13 @@
       conn = F.connect({
         hello: function () { return hello; },
         onMessage: onMessage,
-        onStatus: function (ok) { $('#offline').classList.toggle('on', !ok && !!S); }
+        onStatus: function (ok) { online = ok; $('#offline').classList.toggle('on', !ok && !!S); }
       });
     } else if (!conn.send(h)) { joinBusy(false); $('#joinErr').textContent = 'Connecting… tap PLAY again in a moment.'; }
   }
 
   function backToJoin(msg) {
+    stopWaiting();
     S = null; me = null; hello = null; sess = null;
     F.store.del('feud.me');
     closeMenu(true);
@@ -627,26 +648,39 @@
 
   function onMessage(m) {
     if (m.t === 'joined') {
-      joinBusy(false);
-      sess = { code: m.code, token: m.token, name: (sess && sess.name) || nameIn.value.trim().toUpperCase() };
+      joinBusy(false); stopWaiting(); waited = false;
+      sess = { code: m.code, token: m.token, name: (sess && sess.name) || nameIn.value.trim().toUpperCase(), at: Date.now() };
       F.store.set('feud.me', sess);
       hello = { t: 'rejoin', code: m.code, token: m.token };
       triedRejoinByName = false;
       F.stayAwake();
     } else if (m.t === 'error') {
-      if (m.code === 'noroom' && hello && hello.t === 'rejoin' && sess && sess.name && !triedRejoinByName) {
+      // Is this about the game we hold a seat in (by pass, or by typing its code again)?
+      var ours = sess && hello && (hello.t === 'rejoin' || (hello.t === 'join' && String(hello.code).toUpperCase() === sess.code));
+      if (m.code === 'noroom' && m.wait && ours && (S || Date.now() - (sess.at || 0) < LIVE_MS)) {
+        waitForGame();                             // we were in this game moments ago: it is on its way back
+      } else if (m.code === 'noroom' && hello && hello.t === 'rejoin' && sess && sess.name && !triedRejoinByName) {
         triedRejoinByName = true;                  // our seat was cleared: try walking back in by name
         hello = { t: 'join', code: sess.code, name: sess.name };
         conn.send(hello);
       } else if (!S || m.code === 'noroom') {
+        if (waited && sess && m.code === 'noroom') {
+          // We waited and the game didn't come back in time. Leave the form filled in, so one tap gets back in if it does.
+          // The pass is kept too, so that tap takes our own seat back rather than asking for it by name.
+          var keep = sess;
+          backToJoin('Your game hasn’t come back yet. Once the scoreboard shows it again, tap PLAY to jump back in.');
+          sess = keep; F.store.set('feud.me', keep);
+          codeIn.value = keep.code; if (keep.name) nameIn.value = keep.name; joinReady(); waited = false;
+        }
         // a stale saved game from another night shouldn't greet people with an error
-        backToJoin(typed || S ? m.msg : '');
+        else backToJoin(typed || S ? m.msg : '');
       } else toast(m.msg);
     } else if (m.t === 'left') {
       if (conn && m.replaced) { conn.stop(); conn = null; }
       backToJoin(m.kicked ? 'The host removed you from the game.' : m.replaced ? 'This game was opened on another device or tab.' : '');
     } else if (m.t === 'state') {
       if ($('#playBtn').classList.contains('busy')) joinBusy(false);
+      if (sess && Date.now() - (sess.at || 0) > 20000) { sess.at = Date.now(); F.store.set('feud.me', sess); }   // "I was in this game just now"
       var list = m.s.fx || [], fresh = [];
       if (lastSeq === null) lastSeq = list.length ? list[list.length - 1].seq : 0;
       else { fresh = list.filter(function (e) { return e.seq > lastSeq; }); if (fresh.length) lastSeq = fresh[fresh.length - 1].seq; }
@@ -658,6 +692,8 @@
   if (sess && sess.code && sess.token && (!qCode || qCode === sess.code)) {
     start({ t: 'rejoin', code: sess.code, token: sess.token });
   }
+  // "I was in this game a minute ago": kept fresh while connected, so a quiet spell doesn't make the seat look stale.
+  setInterval(function () { if (S && sess && online) { sess.at = Date.now(); F.store.set('feud.me', sess); } }, 60000);
 
   /* ----------------------------------------------------------- render */
   function T(i) { return S.teams[i].name; }
@@ -666,6 +702,7 @@
     fresh.forEach(function (e) { has[e.type] = e; });
     if (has.strike && !me.isHost) flash(has.strike.n);
     if (has.undo || has.lobby) hidePop();
+    if (has.restored) toast('We’re back. The game is right where it left off.');
     // When a round is won the scoreboard holds the points in the bank, then flies them to the
     // winners. Phones wait the same beat, so nobody's phone gives the moment away early.
     if (has.undo || has.lobby || !S.game || S.phase !== 'roundEnd') clearGate();

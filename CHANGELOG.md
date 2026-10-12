@@ -8,7 +8,43 @@ Times are Pacific. The code in brackets is the GitHub commit for that change: on
 **Commits** and click it to see exactly which lines changed, or to get the game back to how it
 was at that point.
 
-## 1.7.2 · October 12, 2026, 12:55 pm
+## 1.8 · October 12, 2026, 2:30 pm
+
+**A game now survives a server restart**
+- Until now the whole game lived in the server's memory, so if the hosting company restarted the
+  server mid-game (the free plan says it may, at any time), the game was gone. Now the scoreboard
+  quietly keeps a copy of the game. If the server comes back having forgotten everything, the
+  scoreboard hands the copy back and play carries on: same room code, teams, scores, strikes,
+  revealed answers, chats, settings, and even Undo.
+- **What everyone sees:** every screen says "Reconnecting…" while the server is away (on the free
+  plan that can be about a minute). Then the TV shows **WE'RE BACK! RIGHT WHERE WE LEFT OFF**,
+  phones show a short "We're back" note, and nobody has to type anything or tap anything.
+- **Phones wait instead of leaving.** A phone that gets back before the scoreboard says "Hang
+  tight. Bringing your game back…" and keeps its seat, for up to 10 minutes. If the scoreboard
+  takes longer than that, phones go to the join screen with the code and name already filled in,
+  and one tap on PLAY puts each person back in their own seat once the game is back.
+- **Fast Money clock:** it stands still while the server is away. It comes back with the time it
+  had left, plus 5 seconds for everyone to reconnect.
+- **Not carried over:** the optional answer countdown if one was running (start it again), and a
+  "press the new key" prompt for keyboard buzzers (tap Change again).
+- **What it can't do:** the copy lives in the browser showing the scoreboard. If that computer or
+  browser is closed for good, the game can't be brought back. A second screen watching the same
+  game doesn't hold a copy; it waits for the main one.
+- **An update in the middle of a game no longer ends it.** The scoreboard and phones reload
+  themselves onto the new version and go straight back into the game. Because the scoreboard
+  page was reloaded, the browser may keep it silent until someone clicks it or presses a key; a
+  small note at the bottom of the TV says so when that happens.
+- For a few seconds after a game is brought back, nobody can take a seat by typing another
+  player's name: each seat is kept for the phone that was sitting in it.
+- The copy is locked. The scoreboard holds it but can't read the answers in it, and the server
+  only accepts a copy that it made itself for that same scoreboard.
+
+**Small things**
+- New page `/uptime` shows when the server last started, to tell at a glance whether it restarted.
+- Pages only reload themselves for a real new version, not because the host's "waking up" page
+  answered instead of the game.
+
+## 1.7.2 · October 12, 2026, 12:55 pm  [7bf0fc9]
 
 **A second walkthrough video, for the rest of the year**
 - There are now two unlisted video pages. The first is the Christmas one from 1.7.1, and its link
