@@ -6,7 +6,9 @@
   // Change this to rename the game everywhere.
   F.TITLE = 'FRIEND FEUD';
   // Shown small on the start screens. Goes up with every change; CHANGELOG.md says what each one was.
-  F.VERSION = '1.5';
+  F.VERSION = '1.5.1';
+  // Shown in the TV lobby while lobby.mp3 is playing. Change it if you change the recording.
+  F.MUSIC_CREDIT = 'Music: “Private Eye” by Kevin MacLeod (incompetech.com) · CC BY 3.0';
 
   F.$ = function (sel, root) { return (root || document).querySelector(sel); };
   F.esc = function (s) {
@@ -470,9 +472,17 @@
 
     /* ---- a real recording, if one has been added to the site ---- */
     var FILES = { loop: '/lobby.mp3', sting: '/fanfare.mp3' }, rec = {}, state = {};
-    function level(buf) {                                  // quiet a loud master down to sit where the built-in tune does
-      var d = buf.getChannelData(0), n = Math.min(d.length, buf.sampleRate * 90), sum = 0, count = 0;
-      for (var i = 0; i < n; i += 7) { sum += d[i] * d[i]; count++; }
+    function edges(buf) {                                  // where the music really starts and ends, so silence isn't looped
+      var d = buf.getChannelData(0), n = d.length, a = 0, b = n - 1, quiet = 0.004;
+      while (a < n && Math.abs(d[a]) < quiet) a++;
+      while (b > a && Math.abs(d[b]) < quiet) b--;
+      if (b - a < buf.sampleRate) return { from: 0, to: buf.duration };          // nothing to speak of: leave it alone
+      return { from: Math.max(0, a / buf.sampleRate - 0.02), to: Math.min(buf.duration, b / buf.sampleRate + 0.3) };
+    }
+    function level(buf, e) {                               // quiet a loud master down to sit where the built-in tune does
+      e = e || edges(buf);
+      var d = buf.getChannelData(0), i0 = Math.floor(e.from * buf.sampleRate), n = Math.min(d.length, Math.floor(e.to * buf.sampleRate), i0 + buf.sampleRate * 120), sum = 0, count = 0;
+      for (var i = i0; i < n; i += 7) { sum += d[i] * d[i]; count++; }
       var rms = Math.sqrt(sum / Math.max(1, count));
       return rms > 0.0005 ? Math.max(0.05, Math.min(1.5, TARGET / rms)) : 1;
     }
@@ -482,7 +492,7 @@
       state[kind] = 'loading';
       fetch(FILES[kind]).then(function (r) { if (!r.ok) throw new Error('none'); return r.arrayBuffer(); })
         .then(function (ab) { return new Promise(function (res, rej) { c.decodeAudioData(ab, res, rej); }); })
-        .then(function (buf) { rec[kind] = { buf: buf, gain: level(buf) }; state[kind] = 'ready'; if (then) then(); })
+        .then(function (buf) { var e = edges(buf); rec[kind] = { buf: buf, gain: level(buf, e), from: e.from, to: e.to }; state[kind] = 'ready'; if (then) then(); })
         .catch(function () { state[kind] = 'none'; });       // no file (or not audio): the built-in tune carries on
     }
 
@@ -499,7 +509,9 @@
       bus.connect(F.sfx.out());
       if (rec.loop) {
         mode = 'recording';
-        src = c.createBufferSource(); src.buffer = rec.loop.buf; src.loop = true; src.connect(bus); src.start();
+        src = c.createBufferSource(); src.buffer = rec.loop.buf; src.loop = true;
+        src.loopStart = rec.loop.from; src.loopEnd = rec.loop.to;                 // loop the music, not the silence around it
+        src.connect(bus); src.start(0, rec.loop.from);
         bus.gain.exponentialRampToValueAtTime(rec.loop.gain, c.currentTime + 0.9);
       } else {
         mode = 'built-in';
@@ -509,17 +521,19 @@
         load('loop', function () { if (mode === 'built-in') { stop(); sync(); } });   // a recording turned up: switch over to it
       }
       load('sting');
+      if (api.onChange) api.onChange(mode);
     }
     function stop() {
       if (!playing()) return;
       clearInterval(timer); timer = null; mode = null;
+      if (api.onChange) api.onChange(mode);
       var c = F.sfx.ctx(), old = bus, oldSrc = src; bus = null; src = null;
       if (!c || !old) return;
       old.gain.cancelScheduledValues(c.currentTime); old.gain.setTargetAtTime(0.0001, c.currentTime, 0.12);    // fade out, then cut off whatever was queued
       setTimeout(function () { try { if (oldSrc) oldSrc.stop(); old.disconnect(); } catch (e) { /* already gone */ } }, 700);
     }
     function sync() { if (want && scene) start(); else stop(); }
-    return {
+    var api = {
       isOn: function () { return want; },
       set: function (on) { want = !!on; sync(); },                    // the person's choice: music on or off
       scene: function (name) { scene = name || null; sync(); },       // where the game is: music plays in some places only
@@ -528,7 +542,7 @@
         var g = c.createGain(); g.connect(F.sfx.out());
         if (rec.sting) {
           g.gain.value = Math.min(1.5, rec.sting.gain * 1.5);
-          var s = c.createBufferSource(); s.buffer = rec.sting.buf; s.connect(g); s.start();
+          var s = c.createBufferSource(); s.buffer = rec.sting.buf; s.connect(g); s.start(0, rec.sting.from);
           s.onended = function () { try { g.disconnect(); } catch (e) { /* already gone */ } };
         } else {
           g.gain.value = VOL * STING;
@@ -538,7 +552,9 @@
         }
       },
       source: function () { return mode; },                           // 'recording', 'built-in', or null when silent
-      _playing: playing, _bar: bar, _sting: stingAt, _BAR: BAR, _BEAT: BEAT, _VOL: VOL, _STING: STING, _bars: SONG.length, _song: SONG, _level: level
+      _playing: playing, _bar: bar, _sting: stingAt, _BAR: BAR, _BEAT: BEAT, _VOL: VOL, _STING: STING, _bars: SONG.length, _song: SONG, _level: level, _edges: edges,
+      _rec: function () { return rec.loop ? { from: rec.loop.from, to: rec.loop.to, gain: rec.loop.gain, length: rec.loop.buf.duration } : null; }
     };
+    return api;
   })();
 })();

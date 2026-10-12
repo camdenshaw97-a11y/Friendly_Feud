@@ -90,7 +90,15 @@ The TV has a **Music** button in the lobby (or press **B**). It is off until you
 - With nothing added, it plays a built-in funk tune.
 - To use a real recording, put a file named `lobby.mp3` next to the other files. It loops in the
   lobby and on the winner screen. An optional `fanfare.mp3` plays at the start of each round.
-- Only add music you have the right to use and share.
+- Only add music you have the right to use and share. If it needs a credit, put it in
+  `F.MUSIC_CREDIT` at the top of `common.js`; the TV lobby shows it while the recording plays.
+
+### Music credit
+
+"Private Eye" by Kevin MacLeod ([incompetech.com](https://incompetech.com)), from
+[Funk Sampler](https://freemusicarchive.org/music/Kevin_MacLeod/Funk_Sampler/Private_Eye/).
+Licensed under [Creative Commons Attribution 3.0](https://creativecommons.org/licenses/by/3.0/).
+The file (`lobby.mp3`) is unchanged; the game loops it from where the music starts to where it ends.
 
 ## What changed, and when
 

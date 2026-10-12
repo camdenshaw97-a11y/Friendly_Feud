@@ -8,7 +8,17 @@ Times are Pacific. The code in brackets is the GitHub commit for that change: on
 **Commits** and click it to see exactly which lines changed, or to get the game back to how it
 was at that point.
 
-## 1.5 · October 11, 2026, 7:45 pm
+## 1.5.1 · October 11, 2026, 8:30 pm
+
+- The TV's music is now a real recording: **"Private Eye" by Kevin MacLeod** (incompetech.com),
+  used under the Creative Commons Attribution 3.0 licence. It plays in the lobby and on the winner
+  screen when Music is on. The built-in funk tune stays as the fallback, and the built-in horn
+  fanfare still opens each round.
+- The credit shows in the TV lobby while the recording plays, and is in the README.
+- Recordings loop from where the music starts to where it ends, so silence at either end of a
+  file isn't played each time round. (This track has about six seconds of it.)
+
+## 1.5 · October 11, 2026, 7:45 pm  [5fc6fc9]
 
 **End-of-game awards**
 - The winner screen on the TV now shows up to three awards under the winning team: **MVP** (most

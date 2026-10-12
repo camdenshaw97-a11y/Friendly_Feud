@@ -116,6 +116,8 @@
   @keyframes hostIn { from { opacity: 0; transform: translateX(-24px); } }
   #lobby .foot { position: absolute; left: 70px; right: 70px; bottom: 76px; display: flex; align-items: center; gap: 18px; }
   #lobby .foot .grow { flex: 1; font-size: 26px; color: #b9c6f5; }
+  #musicCredit { position: absolute; left: 70px; bottom: 34px; font: 600 20px var(--text); color: #8f9fdc; display: none; animation: fadeIn .5s; }
+  #musicCredit.on { display: block; }
 
   /* ---- game ---- */
   #roundTag { position: absolute; left: 60px; top: 46px; font: 400 48px var(--display); letter-spacing: .05em; color: var(--gold); text-shadow: 0 3px 0 #000; }
@@ -305,6 +307,7 @@
       <button class="chip" data-music>Music: off</button>
       <button class="chip" id="btnQuestions">My questions</button>
     </div>
+    <div id="musicCredit"></div>
   </section>
 
   <section class="screen" id="game">
@@ -829,6 +832,8 @@
   function paintMusic() {
     document.querySelectorAll('[data-music]').forEach(function (b) { b.textContent = 'Music: ' + (F.music.isOn() ? 'on' : 'off'); b.classList.toggle('lit', F.music.isOn()); });
   }
+  $('#musicCredit').textContent = F.MUSIC_CREDIT || '';
+  F.music.onChange = function (source) { $('#musicCredit').classList.toggle('on', source === 'recording' && !!F.MUSIC_CREDIT); };   // credit the recording while it plays
   F.music.set(F.store.get('feud.music', false) === true);
   paintMusic();
   document.querySelectorAll('[data-music]').forEach(function (b) {
