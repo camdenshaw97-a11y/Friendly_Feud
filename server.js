@@ -28,10 +28,13 @@ const MIME = {
   '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.json': 'application/json', '.mp3': 'audio/mpeg'
 };
 
-// The walkthrough video has a page of its own. Nothing in the game links to it, and its files
-// (promo.html, promo.mp4, promo.jpg) are only ever served under this address.
-const PROMO_PATH = '/video-ph672bhw2q';
-const PROMO = { '': ['promo.html', 'text/html; charset=utf-8'], '/video.mp4': ['promo.mp4', 'video/mp4'], '/poster.jpg': ['promo.jpg', 'image/jpeg'] };
+// The walkthrough videos each have a page of their own. Nothing in the game links to them, and
+// their files (promo.html and the promo-named videos and pictures) are only ever served under
+// these addresses. Both pages share promo.html; the words below are dropped into it.
+const PROMOS = {
+  '/video-ph672bhw2q': { video: 'promo.mp4', poster: 'promo.jpg', title: 'Friend Feud: Christmas game night?', head: 'CHRISTMAS GAME NIGHT?' },
+  '/video-9zrbgjx22p': { video: 'promo-anytime.mp4', poster: 'promo-anytime.jpg', title: 'Friend Feud: game night, anyone?', head: 'GAME NIGHT, ANYONE?' }
+};
 
 // A fingerprint of the pages as they are right now. Every page is told which build it is, and can
 // ask for the current one, so a screen left open across an update reloads itself.
@@ -70,8 +73,9 @@ const server = http.createServer((req, res) => {
       res.end(svg);
     });
   }
-  if (p === PROMO_PATH || p.startsWith(PROMO_PATH + '/')) return sendPromo(req, res, p.slice(PROMO_PATH.length).replace(/\/$/, ''));
-  if (/^\/promo\./.test(p)) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('Not found'); }
+  const promo = Object.keys(PROMOS).find(base => p === base || p.startsWith(base + '/'));
+  if (promo) return sendPromo(req, res, promo, p.slice(promo.length).replace(/\/$/, ''));
+  if (/^\/promo[.-]/.test(p)) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('Not found'); }
   if (p === '/') p = '/index.html';
   if (p === '/tv') p = '/tv.html';
   const file = path.normalize(path.join(PUB, p));
@@ -91,8 +95,9 @@ const server = http.createServer((req, res) => {
 
 // The video page and its two files. The video is sent in whatever pieces the browser asks for
 // ("Range" requests): iPhones will not play a video from a server that can't do that.
-function sendPromo(req, res, sub) {
-  const entry = PROMO[sub];
+function sendPromo(req, res, base, sub) {
+  const P = PROMOS[base];
+  const entry = { '': ['promo.html', 'text/html; charset=utf-8'], '/video.mp4': [P.video, 'video/mp4'], '/poster.jpg': [P.poster, 'image/jpeg'] }[sub];
   const gone = () => { res.writeHead(404, { 'content-type': 'text/plain' }); res.end('Not found'); };
   if (!entry || (req.method !== 'GET' && req.method !== 'HEAD')) return gone();
   const file = path.join(PUB, entry[0]), type = entry[1];
@@ -103,7 +108,7 @@ function sendPromo(req, res, sub) {
       // link previews (texts, email) need full addresses for the picture and the video
       const host = /^[a-z0-9.:-]+$/i.test(req.headers.host || '') ? req.headers.host : 'localhost';
       const proto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim() === 'https' ? 'https' : 'http';
-      const body = Buffer.from(html.split('{{HERE}}').join(proto + '://' + host + PROMO_PATH).split('{{PATH}}').join(PROMO_PATH));
+      const body = Buffer.from(html.split('{{HERE}}').join(proto + '://' + host + base).split('{{PATH}}').join(base).split('{{TITLE}}').join(P.title).split('{{HEAD}}').join(P.head));
       res.writeHead(200, Object.assign(head, { 'cache-control': 'no-cache', 'content-length': body.length }));
       res.end(req.method === 'HEAD' ? undefined : body);
     });

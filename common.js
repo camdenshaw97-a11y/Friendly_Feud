@@ -6,7 +6,7 @@
   // Change this to rename the game everywhere.
   F.TITLE = 'FRIEND FEUD';
   // Shown small on the start screens. Goes up with every change; CHANGELOG.md says what each one was.
-  F.VERSION = '1.7.1';
+  F.VERSION = '1.7.2';
   // Shown in the TV lobby while lobby.mp3 is playing. Change it if you change the recording.
   F.MUSIC_CREDIT = 'Music: “Private Eye” by Kevin MacLeod (incompetech.com) · CC BY 3.0';
 

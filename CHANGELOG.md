@@ -8,7 +8,19 @@ Times are Pacific. The code in brackets is the GitHub commit for that change: on
 **Commits** and click it to see exactly which lines changed, or to get the game back to how it
 was at that point.
 
-## 1.7.1 · October 12, 2026, 12:35 pm
+## 1.7.2 · October 12, 2026, 12:55 pm
+
+**A second walkthrough video, for the rest of the year**
+- There are now two unlisted video pages. The first is the Christmas one from 1.7.1, and its link
+  works exactly as before. The new one is the same walkthrough with nothing seasonal in it:
+  everyday questions (pizza toppings, not Christmas trees), ordinary team names, no snow, and
+  "Game night, anyone?" in place of "Christmas game night?" on the last screen.
+- Like the first, the new page has no link from the game, an address ending in a random code,
+  a note to search engines not to list it, and a preview picture when the link is pasted into a
+  text or an email.
+- The game itself is unchanged.
+
+## 1.7.1 · October 12, 2026, 12:35 pm  [671d3d3]
 
 **A private page for the walkthrough video**
 - The 70-second walkthrough video (a holiday game played start to finish, with captions) now lives
