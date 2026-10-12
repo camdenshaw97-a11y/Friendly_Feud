@@ -16,6 +16,14 @@
   --text: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* People who ask their device for less motion get the same game without the movement. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important; transition-delay: 0s !important;
+  }
+}
+
 /* ---------------------------------------------------------------- board */
 .board {
   display: grid;
@@ -83,7 +91,13 @@
   display: flex; align-items: flex-start; justify-content: center;
   overflow: auto; -webkit-overflow-scrolling: touch;
   font-family: var(--text); color: #fff;
+  animation: edIn .3s cubic-bezier(.2, .9, .3, 1);
 }
+@keyframes edIn { from { opacity: 0; transform: translateY(36px); } }
+.ed-back.out { animation: edOut .2s ease-in forwards; pointer-events: none; }
+@keyframes edOut { to { opacity: 0; transform: translateY(36px); } }
+.ed > * { animation: edRise .3s ease-out backwards; }
+@keyframes edRise { from { opacity: 0; transform: translateY(10px); } }
 .ed {
   width: min(680px, 100%); margin: 0 auto; padding: 18px 16px 40px; box-sizing: border-box;
 }
@@ -93,7 +107,9 @@
 .ed-btn {
   font: 700 15px var(--text); color: #fff; background: #24358a; border: 0; border-radius: 10px;
   padding: 11px 14px; cursor: pointer;
+  transition: transform .1s ease-out, filter .15s, opacity .2s;
 }
+.ed-btn:active:not(:disabled), .ed-btn[data-fx-press]:not(:disabled) { transform: scale(.94); filter: brightness(1.2); }
 .ed-btn.pri { background: var(--gold); color: #1c1400; }
 .ed-btn.red { background: #7a1512; }
 .ed-btn.ghost { background: transparent; box-shadow: inset 0 0 0 2px #3a4da8; }
@@ -112,6 +128,7 @@
   background: #0d1a5c; border: 2px solid #2b3c8f; border-radius: 10px; padding: 10px 12px;
 }
 .ed textarea { min-height: 70px; resize: vertical; }
+.ed textarea, .ed input { transition: border-color .18s; }
 .ed textarea:focus, .ed input:focus { outline: none; border-color: var(--gold); }
 .ed-ans { display: grid; grid-template-columns: 26px 1fr 76px; gap: 8px; align-items: center; margin-bottom: 6px; }
 .ed-ans span { color: #9fb0ee; font-weight: 700; text-align: center; }

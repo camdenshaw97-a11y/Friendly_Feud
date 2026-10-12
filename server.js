@@ -254,6 +254,7 @@ function startGame(room) {
   room.game.deck = buildDeck(room);
   loadQuestion(room);
   fx(room, 'start');
+  fx(room, 'round', { round: 1, mult: 1 });
 }
 
 function loadQuestion(room) {
@@ -403,11 +404,13 @@ function doNext(room) {
     g.round++;
     g.mult = ((g.round - 1) % 3) + 1;   // single, double, triple, then back to single
     loadQuestion(room);
+    fx(room, 'round', { round: g.round, mult: g.mult });
   } else if (g.scores[0] === g.scores[1]) {
     g.sudden = true;
     g.round++;
     g.mult = 3;
     loadQuestion(room);
+    fx(room, 'round', { round: g.round, mult: 3, sudden: true });
   } else {
     g.phase = 'gameOver';
     g.winner = g.scores[0] > g.scores[1] ? 0 : 1;

@@ -137,6 +137,120 @@
     };
   };
 
+  /* ---- motion helpers ---- */
+  var calm = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  F.motionOK = function () { return !(calm && calm.matches); };
+  // A one-off animation that leaves no classes or styles behind. Does nothing when the
+  // browser can't, or when the person has asked their device for less motion.
+  F.anim = function (el, frames, opts) {
+    if (!el || !el.animate || !F.motionOK()) return null;
+    try { return el.animate(frames, opts); } catch (e) { return null; }
+  };
+  F.bump = function (el, scale) {
+    return F.anim(el, [{ transform: 'scale(1)' }, { transform: 'scale(' + (scale || 1.2) + ')', offset: 0.4 }, { transform: 'scale(1)' }],
+      { duration: 380, easing: 'cubic-bezier(.3, 1.3, .5, 1)' });
+  };
+  // Swap a line of text, with a small rise so the change is noticed.
+  F.swapText = function (el, text) {
+    if (el.textContent === text) return false;
+    el.textContent = text;
+    F.anim(el, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 240, easing: 'ease-out' });
+    return true;
+  };
+
+  /* ---- redraw a block of HTML without throwing away what is already on screen ----
+     Elements that are still there are kept and only what changed is touched, so buttons keep
+     their pressed state, switches slide instead of jumping, lists keep their scroll position,
+     and only things that are really new play their entrance animation.
+     data-key="..." (or an id) marks an element as "the same one" between redraws.
+     data-live means "leave my contents alone": a script is animating them. */
+  function keyOf(n) { return n.nodeType === 1 ? (n.getAttribute('data-key') || n.id || null) : null; }
+  function morphKids(from, to) {
+    var want = {}, cur = from.firstChild, next = to.firstChild, n, k, hit, c, clear;
+    function id(x) { var kk = keyOf(x); return kk ? x.nodeName + '|' + kk : null; }
+    function drop(x) { if (x === cur) cur = cur.nextSibling; from.removeChild(x); }
+    for (n = to.firstChild; n; n = n.nextSibling) if (id(n)) want[id(n)] = 1;
+    while (next) {
+      n = next; next = next.nextSibling;
+      while (cur && id(cur) && !want[id(cur)]) drop(cur);          // keyed, and not coming back
+      k = id(n); hit = null;
+      for (c = cur; c; c = c.nextSibling) if (k ? id(c) === k : (!id(c) && c.nodeName === n.nodeName)) { hit = c; break; }
+      if (hit && hit !== cur) {
+        // Clear away whatever stands before the match unless it is wanted later. Moving the
+        // match itself would work too, but a moved element replays its entrance animation.
+        clear = true;
+        for (c = cur; c !== hit; c = c.nextSibling) if (id(c) && want[id(c)]) { clear = false; break; }
+        if (clear) while (cur !== hit) drop(cur);
+      }
+      if (hit) {
+        if (hit === cur) cur = cur.nextSibling; else from.insertBefore(hit, cur);
+        morphNode(hit, n);
+      } else from.insertBefore(n, cur);
+    }
+    while (cur) drop(cur);
+  }
+  function morphNode(a, b) {
+    if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
+    var i, at, name;
+    for (i = a.attributes.length - 1; i >= 0; i--) {
+      name = a.attributes[i].name;
+      if (!b.hasAttribute(name) && name.indexOf('data-fx-') !== 0) a.removeAttribute(name);
+    }
+    for (i = 0; i < b.attributes.length; i++) {
+      at = b.attributes[i];
+      if (a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value);
+    }
+    if (a.nodeName === 'INPUT' || a.nodeName === 'TEXTAREA') {
+      if (document.activeElement !== a) { var v = b.getAttribute('value') || ''; if (a.value !== v) a.value = v; }
+      return;
+    }
+    if (a.nodeName === 'SELECT' && a.options.length === b.options.length) {   // same choices: keep what was picked
+      var same = true;
+      for (i = 0; i < a.options.length; i++) if (a.options[i].value !== b.options[i].value || a.options[i].text !== b.options[i].text) same = false;
+      if (same) return;
+    }
+    if (a.hasAttribute('data-live')) return;
+    morphKids(a, b);
+  }
+  F.morph = function (root, html) {
+    var t = document.createElement('template');
+    t.innerHTML = html;
+    morphKids(root, t.content);
+  };
+
+  /* Numbers marked data-n count up or down to their new value instead of jumping. */
+  F.liveCounts = function (root, ms) {
+    var els = root.querySelectorAll('[data-n]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i], to = Number(el.getAttribute('data-n'));
+      if (el._n == null) { el._n = to; el.textContent = to; continue; }
+      if (el._n === to) continue;
+      var up = to > el._n;
+      el._n = to;
+      if (!F.motionOK()) { F.countTo(el, to, 0); continue; }
+      F.countTo(el, to, ms || 600);
+      if (up) F.bump(el, 1.25);
+    }
+  };
+
+  /* Buttons stay pressed for a beat even on a quick tap, so every tap is felt. */
+  F.pressFx = function () {
+    var held = null, t0 = 0;
+    function release() {
+      var b = held; held = null;
+      if (b) setTimeout(function () { b.removeAttribute('data-fx-press'); }, Math.max(0, 110 - (performance.now() - t0)));
+    }
+    document.addEventListener('pointerdown', function (e) {
+      var b = e.target.closest ? e.target.closest('button, a.tvbtn, a.link') : null;
+      if (!b || b.disabled) return;
+      if (held && held !== b) held.removeAttribute('data-fx-press');
+      held = b; t0 = performance.now();
+      b.setAttribute('data-fx-press', '');
+    }, { passive: true });
+    ['pointerup', 'pointercancel', 'blur'].forEach(function (ev) { addEventListener(ev, release, { passive: true }); });
+    document.addEventListener('touchstart', function () {}, { passive: true });   // lets :active work on iPhones
+  };
+
   /* ---- count a number up or down ---- */
   F.countTo = function (el, to, ms) {
     var from = parseInt(el.textContent, 10) || 0;
@@ -199,7 +313,13 @@
       tick: function () { tone({ f: 1000, type: 'square', d: 0.04, g: 0.1 }); },
       dup: function () { buzzer(0, 0.18); buzzer(0.26, 0.18); },
       timeUp: function () { buzzer(0, 0.5); buzzer(0.6, 0.7); },
-      lock: function () { tone({ f: 660, type: 'triangle', d: 0.09, g: 0.18 }); }
+      lock: function () { tone({ f: 660, type: 'triangle', d: 0.09, g: 0.18 }); },
+      join: function () { tone({ f: 660, d: 0.09, g: 0.14 }); tone({ f: 990, t: 0.08, d: 0.2, g: 0.14 }); },
+      round: function () {
+        [392, 523, 659].forEach(function (f, i) { tone({ f: f, type: 'triangle', t: i * 0.1, d: 0.16, g: 0.2 }); });
+        bell(1047, 0.32, 0.26);
+      },
+      whoosh: function () { tone({ f: 220, f2: 880, type: 'sine', d: 0.45, g: 0.08 }); }
     };
   })();
 })();

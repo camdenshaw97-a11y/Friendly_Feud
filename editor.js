@@ -17,7 +17,11 @@
       F.store.set(KEY, list);
       opts.onChange(list);
     }
-    function close() { back.remove(); if (opts.onClose) opts.onClose(); }
+    function close() {
+      if (F.motionOK && F.motionOK()) { back.classList.add('out'); setTimeout(function () { back.remove(); }, 200); }
+      else back.remove();
+      if (opts.onClose) opts.onClose();
+    }
 
     function showList() {
       var h = '<div class="ed"><div class="ed-top"><h2>MY QUESTIONS (' + list.length + ')</h2>' +
