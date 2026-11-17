@@ -8,7 +8,29 @@ Times are Pacific. The code in brackets is the GitHub commit for that change: on
 **Commits** and click it to see exactly which lines changed, or to get the game back to how it
 was at that point.
 
-## 1.8 · October 12, 2026, 2:30 pm
+## 1.9 · November 17, 2026, 12:20 am
+
+**A new look on every screen**
+- The whole game has been redrawn: the TV scoreboard, the player phones and the host phone. Same
+  navy, gold and red, same tall lettering, but flat and clean instead of shiny: the heavy bevels,
+  glows and double gold frames are gone, and so are the spinning rays behind everything.
+- **New logo.** FRIEND FEUD is now stacked lettering (FEUD in gold) with a red strike tile beside
+  it, replacing the tilted oval badge. It is on the TV start screen, the lobby, the phone join
+  screen and the browser tab.
+- **The board.** Answers flip to bright blue with their points on a gold block, so the numbers
+  read from across the room. The frame keeps its blinking marquee bulbs.
+- **TV start screen** has the logo big on the left with the instructions and the Start button
+  beside it, under a row of bulbs.
+- **Phones.** Bigger PLAY and START THE GAME buttons, the bank in the top bar is a solid gold
+  block, switches turn gold when on (they were green), and the buzzer is a flat red button.
+- **Chat.** MY TEAM and EVERYONE are two solid tabs. Everyone is off-white (it was orange), so the
+  two channels still never look alike.
+- **Host phone.** The question card, answer list, STRIKE button and menu are restyled to match;
+  the layout that keeps everything on one screen is unchanged.
+- Nothing about how the game plays has changed: same rules, same wording, same buttons in the
+  same places, same sounds and animations.
+
+## 1.8 · October 12, 2026, 2:30 pm  [9a70993]
 
 **A game now survives a server restart**
 - Until now the whole game lived in the server's memory, so if the hosting company restarted the
